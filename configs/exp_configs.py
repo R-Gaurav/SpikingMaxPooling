@@ -23,11 +23,11 @@ tf_exp_cfg = {
 nengo_dl_cfg = {
   "tf_wts_inpt_dir": (
       EXP_OTPT_DIR + "/cifar10/%s/tf_trained_wts/weights" % model["name"]),
-  "ndl_res_otpt_dir": EXP_OTPT_DIR + "/cifar10/%s/ndl_relu_results/" % model["name"],
-  "spk_neuron": nengo.RectifiedLinear(),
-  "synapse": None,
-  "sfr": 1, # 600
-  "n_steps": 1, # 80
+  "ndl_res_otpt_dir": EXP_OTPT_DIR + "/cifar10/%s/ndl_spkg_results/" % model["name"],
+  "spk_neuron": nengo.SpikingRectifiedLinear(), # nengo.RectifiedLinear(),
+  "synapse": 0.005, #None,
+  "sfr": 250, # 1
+  "n_steps": 55, # 1
   "test_batch_size": 100,
   "train_batch_size": 16,
 }

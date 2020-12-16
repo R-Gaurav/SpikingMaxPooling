@@ -6,6 +6,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import nengo
 import numpy as np
+import pickle
+
+import _init_paths
+
+from utils.consts.dir_consts import EXP_OTPT_DIR
+from utils.consts.exp_consts import SEED
 
 def collect_sim_data_spikes(probes_lst, sim_data):
   """
@@ -66,6 +72,7 @@ def _spike_plot(ax, spikes_matrix):
   timesteps = np.arange(n_steps)
 
   for i in range(num_neurons):
+    # Sometime spikes are not valued at 1, rather 0.99999994 therefore != 0.
     for t in timesteps[np.where(spikes_matrix[:, i] != 0)]:
       ax.plot([t, t], [i+0.5, i+1.5], color=color)
   ax.set_ylim(0.5, num_neurons+0.5)
@@ -85,13 +92,16 @@ def plot_ndl_layer_spikes(lyr_name, sfr, layer_spk_res, num_random_neurons=None)
     num_random_neurons <int>: Choose `num_random_neurons` if given else plot for
                               all neurons.
   """
+  # All values in spikes_matrix are either 0 or 1 (1 denoting a spike).
   spikes_matrix = layer_spk_res * sfr * 0.001 # (default dt = 0.001).
   # Shape of spikes_matrix is n_steps x num_neurons.
   fig, ax = plt.subplots(figsize=(14, 12))
   _, num_total_neurons = spikes_matrix.shape
   if num_random_neurons != None:
-    random_neurons = np.random.choice(num_total_neurons, num_random_neurons)
-    spikes_matrix = spikes_matrix[:, random_neurons]
+    np.random.seed(SEED)
+    random_neurons = np.random.choice(
+        num_total_neurons, num_random_neurons, replace=False)
+  spikes_matrix = spikes_matrix[:, random_neurons]
   _spike_plot(ax, spikes_matrix)
   ax.set_ylabel("Neuron Index")
   ax.set_xlabel("Time in $ms$")
@@ -131,7 +141,9 @@ def plot_entire_network_info(img, layers_spks_dict, otpt_lyr_vals, sfr,
     lyr_name = layer_names[i-2]
     spikes_matrix = layers_spks_dict[lyr_name] * sfr * 0.001
     _, num_total_neurons = spikes_matrix.shape
-    random_neurons = np.random.choice(num_total_neurons, num_rndm_neurons)
+    np.random.seed(SEED)
+    random_neurons = np.random.choice(
+        num_total_neurons, num_rndm_neurons, replace=False)
     spikes_matrix = spikes_matrix[:, random_neurons]
     row, col = i // 2, i % 2
     _spike_plot(axs[row, col], spikes_matrix)
@@ -144,11 +156,11 @@ def _scatter_plot(ax, y_values_lst, title, x_values=None):
   spk_vals, non_spk_vals = y_values_lst[0], y_values_lst[1]
 
   if x_values != None:
-    ax.plot(x_values, spk_vals, 'o', color="black", label="Spiking", alpha=0.03)
-    ax.plot(x_values, non_spk_vals, 'o', color="red", label="Non-Spiking", alpha=0.03)
+    ax.plot(x_values, spk_vals, 'o', color="black", label="Spiking", alpha=0.3)
+    ax.plot(x_values, non_spk_vals, 'o', color="red", label="Non-Spiking", alpha=0.3)
   else:
-    ax.plot(spk_vals, 'o', color="black", label="Spiking", alpha=0.03)
-    ax.plot(non_spk_vals, 'o', color="red", label="Non-Spiking", alpha=0.03)
+    ax.plot(spk_vals, 'o', color="black", label="Spiking", alpha=0.3)
+    ax.plot(non_spk_vals, 'o', color="red", label="Non-Spiking", alpha=0.3)
 
   bias = np.mean(spk_vals - non_spk_vals)
   rmse = np.sqrt(np.mean((spk_vals-non_spk_vals)**2))
@@ -199,7 +211,9 @@ def plot_comparison_between_spiking_and_relu(sfr, layers_spks_res, layers_relu_r
       spikes_matrix = spks_fr_layers[layers_name[i-1]] * sfr * 0.001
       n_steps, num_total_neurons = spikes_matrix.shape
       #spks_fr_otpt = np.sum(spikes_matrix, axis=0) / (n_steps * 0.001)
-      random_neurons = np.random.choice(num_total_neurons, num_rndm_neurons)
+      np.random.seed(SEED)
+      random_neurons = np.random.choice(
+          num_total_neurons, num_rndm_neurons, replace=False)
       spks_fr_otpt = []
       for randon_neuron in random_neurons:
         spks_fr_otpt.append(
@@ -213,7 +227,6 @@ def plot_comparison_between_spiking_and_relu(sfr, layers_spks_res, layers_relu_r
       relu_fr_otpt = relu_fr_otpt[:, random_neurons].reshape(-1)
       _scatter_plot(
           axs[i], [spks_fr_otpt, relu_fr_otpt], layers_name[i-1])
-
 
 def get_filtered_signal_from_spikes(spike_train, n_steps, synapse=0.005):
   """
@@ -242,3 +255,14 @@ def get_filtered_signal_from_spikes(spike_train, n_steps, synapse=0.005):
     sim.run((n_steps-1)*0.001)
 
   return sim.data[probe]
+
+def get_tf_non_spiking_relu_results(dataset="cifar10", model="model_1"):
+  """
+  Returns the Nengo-DL results tested over non-spiking: nengo.RectifiedLinear().
+
+  Args:
+    dataset
+  """
+  return pickle.load(
+      open(EXP_OTPT_DIR + "/%s/%s/ndl_relu_results/ndl_%s_results_sfr_1_nstps_1.p"
+           % (dataset, model, model), "rb"))
