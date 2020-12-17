@@ -26,7 +26,7 @@ nengo_dl_cfg = {
   "ndl_res_otpt_dir": EXP_OTPT_DIR + "/cifar10/%s/ndl_spkg_results/" % model["name"],
   "spk_neuron": nengo.SpikingRectifiedLinear(), # nengo.RectifiedLinear(),
   "synapse": 0.005, #None,
-  "sfr": 250, # 1
+  "sfr": 200, # 1
   "n_steps": 60, # 1
   "test_batch_size": 100,
   "train_batch_size": 16,
