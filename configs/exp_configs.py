@@ -27,7 +27,7 @@ nengo_dl_cfg = {
   "spk_neuron": nengo.SpikingRectifiedLinear(), # nengo.RectifiedLinear(),
   "synapse": 0.005, #None,
   "sfr": 250, # 1
-  "n_steps": 55, # 1
+  "n_steps": 60, # 1
   "test_batch_size": 100,
   "train_batch_size": 16,
 }
