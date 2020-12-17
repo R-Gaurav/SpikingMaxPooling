@@ -5,13 +5,16 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import nengo
+import nengo_dl
 import numpy as np
 import pickle
 
 import _init_paths
 
+from configs.exp_configs import tf_exp_cfg as exp_cfg, nengo_dl_cfg as ngo_cfg
 from utils.consts.dir_consts import EXP_OTPT_DIR
 from utils.consts.exp_consts import SEED
+from utils.nengo_dl_utils import get_nengo_dl_model
 
 def collect_sim_data_spikes(probes_lst, sim_data):
   """
@@ -266,3 +269,50 @@ def get_tf_non_spiking_relu_results(dataset="cifar10", model="model_1"):
   return pickle.load(
       open(EXP_OTPT_DIR + "/%s/%s/ndl_relu_results/ndl_%s_results_sfr_1_nstps_1.p"
            % (dataset, model, model), "rb"))
+
+def plot_ndl_model_layers_info(do_plot_tuning_curves=True):
+  """
+  Plots the detailed spiking related info of the Nengo-DL model.
+
+  Args:
+    do_plot_tuning_curves (bool): Should the tuning curves be plotted too?
+  """
+  ndl_model, _ = get_nengo_dl_model((32, 32, 3), exp_cfg, ngo_cfg)
+  with ndl_model.net:
+    nengo_dl.configure_settings(stateful=False)
+
+  with nengo_dl.Simulator(ndl_model.net, minibatch_size=ngo_cfg["test_batch_size"],
+                          progress_bar=True, seed=SEED) as sim:
+    pass # No need to execute the simlation, as we just need the compiled model.
+
+  # Get the info for each layer except the first (input) and last (output) layer.
+  layers = list(ndl_model.layers.dict.values())[1:-1] # The layers are ordered.
+  fig, axs = plt.subplots(len(layers), figsize=(16, 3*len(layers)))
+  if do_plot_tuning_curves:
+    fig1, axs1 = plt.subplots(len(layers), figsize=(16, 2*len(layers)))
+
+  for i, layer in enumerate(layers):
+    ens = layer.ensemble
+    # Plot the general info.
+    axs[i].set_title(
+        "Layer: {0}, Neuron Type: {1}, Number of Neurons: {2}, Seed: {3}".format(
+        ens.neurons, ens.neuron_type, ens.n_neurons, ens.seed))
+    axs[i].plot(sim.data[ens].max_rates, 'ro', label="Max Firing Rates")
+    axs[i].plot(sim.data[ens].encoders, 'g--', label="Encoders")
+    axs[i].plot(sim.data[ens].scaled_encoders, 'b+', label="Scaled Encoders")
+    axs[i].plot(sim.data[ens].bias, 'g^', label="Bias")
+    axs[i].plot(sim.data[ens].gain, 'b:', label="Gain")
+    axs[i].plot(sim.data[ens].itercepts, 'r1', label="Intercepts")
+    axs[i].legend()
+    axs[i].set_xlabel("Neuron Indices")
+
+    # Plot the Tuning Curves.
+    if do_plot_tuning_curves:
+      axs1[i].set_title("Tuning Curves for {}".format(ens.neurons))
+      x, act_mat = nengo.utils.ensemble.tuning_curves(ens, sim)
+      for j in range(ens.n_neurons):
+        axs1[i].plot(act_mat[:, j])
+      axs1[i].set_xlabel("x - values")
+
+  fig.show()
+  fig1.show()
