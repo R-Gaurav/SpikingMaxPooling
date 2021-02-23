@@ -155,27 +155,21 @@ def plot_entire_network_info(img, layers_spks_dict, otpt_lyr_vals, sfr,
     axs[row, col].set_title(
         "Layer: %s, Total Number of Neurons: %s" % (lyr_name, num_total_neurons))
 
-def _scatter_plot(ax, y_values_lst, title, x_values=None):
-  spk_vals, non_spk_vals = y_values_lst[0], y_values_lst[1]
-
-  if x_values != None:
-    ax.plot(x_values, spk_vals, 'o', color="black", label="Spiking", alpha=0.3)
-    ax.plot(x_values, non_spk_vals, 'o', color="red", label="Non-Spiking", alpha=0.3)
-  else:
-    ax.plot(spk_vals, 'o', color="black", label="Spiking", alpha=0.3)
-    ax.plot(non_spk_vals, 'o', color="red", label="Non-Spiking", alpha=0.3)
-
+def _scatter_plot(ax, y_values_lst, title):
+  spk_vals, non_spk_vals = y_values_lst[0].reshape(-1), y_values_lst[1]
+  corr = np.corrcoef(spk_vals, non_spk_vals)
   bias = np.mean(spk_vals - non_spk_vals)
   rmse = np.sqrt(np.mean((spk_vals-non_spk_vals)**2))
   covr = np.sum(
       (spk_vals - np.mean(spk_vals)) * (non_spk_vals - np.mean(non_spk_vals)))/(
       spk_vals.shape[0]-1)
 
-  ax.legend()
-  ax.set_title("Layer: %s, Bias: %s, Covariance: %s, RMSE: %s"
-               % (title, bias, covr, rmse))
-  ax.set_xlabel("Neurons Indices")
-  ax.set_ylabel("Firing Frequency $Hz$")
+  ax.set_title("Layer: %s \n, Bias: %s, Covariance: %s, RMSE: %s, Correlation: %s"
+               % (title, np.round(bias, 2), np.round(covr, 2), np.round(rmse, 2),
+               np.round(corr, 2)))
+  ax.scatter(spk_vals, non_spk_vals, color="black")
+  ax.set_xlabel("Spiking Neuron Vals")
+  ax.set_ylabel("Non-Spiking Neuron Vals (last timestep)")
 
 def plot_comparison_between_spiking_and_relu(sfr, layers_spks_res, layers_relu_res,
                                              num_rndm_neurons=512):
@@ -200,15 +194,16 @@ def plot_comparison_between_spiking_and_relu(sfr, layers_spks_res, layers_relu_r
 
   layers_name = list(layers_spks_res["spk_res"].keys())
   num_plots = len(layers_name) + 1 # +1 for class probability output.
-  fig, axs = plt.subplots(num_plots, figsize=(14, 3*num_plots*2))
-  fig.suptitle("True Class: %s, ReLU Predicted Class: %s, "
-               "Spiking Neuron Predicted Class: %s"
+  fig, axs = plt.subplots(int(np.ceil(num_plots/2)), 2, figsize=(16, 3*num_plots))
+  fig.suptitle("Filtered Spiking Output - Correlation Plot, True Class: %s, "
+               "ReLU Predicted Class: %s, Spiking Neuron Predicted Class: %s\n\n"
                % (relu_y_true, relu_y_pred, spk_y_pred))
 
   for i in range(num_plots):
     if i==0: # Plot the class probability.
       _scatter_plot(
-          axs[i], [spk_prob_otpt[-1], relu_prob_otpt[-1]], "Class Probability")
+          axs[int(i/2), int(i%2)], [spk_prob_otpt[-1], relu_prob_otpt[-1]],
+          "Class Probability")
     else: # Get the spikes and firing rates.
       # For the spiking neurons.
       spikes_matrix = spks_fr_layers[layers_name[i-1]] * sfr * 0.001
@@ -229,7 +224,10 @@ def plot_comparison_between_spiking_and_relu(sfr, layers_spks_res, layers_relu_r
       # Consider the same random neurons as for spiking neurons.
       relu_fr_otpt = relu_fr_otpt[:, random_neurons].reshape(-1)
       _scatter_plot(
-          axs[i], [spks_fr_otpt, relu_fr_otpt], layers_name[i-1])
+          axs[int(i/2), int(i%2)], [spks_fr_otpt, relu_fr_otpt], layers_name[i-1])
+
+  fig.tight_layout()
+  fig.show()
 
 def get_filtered_signal_from_spikes(spike_train, n_steps, synapse=0.005):
   """
@@ -278,41 +276,50 @@ def plot_ndl_model_layers_info(do_plot_tuning_curves=True):
     do_plot_tuning_curves (bool): Should the tuning curves be plotted too?
   """
   ndl_model, _ = get_nengo_dl_model((32, 32, 3), exp_cfg, ngo_cfg)
+  # Get the info for each layer except the first (input) and last (output) layer.
+  layers = list(ndl_model.layers.dict.values())[1:-1] # The layers are ordered.
+  fig, axs = plt.subplots(len(layers), figsize=(16, 3*len(layers)))
+  if do_plot_tuning_curves:
+    fig1, axs1 = plt.subplots(len(layers), figsize=(16, 3*len(layers)))
   with ndl_model.net:
     nengo_dl.configure_settings(stateful=False)
 
   with nengo_dl.Simulator(ndl_model.net, minibatch_size=ngo_cfg["test_batch_size"],
                           progress_bar=True, seed=SEED) as sim:
+    for i, layer in enumerate(layers):
+      ens = layer.ensemble
+      # Plot the general info.
+      axs[i].set_title(
+          "Layer: {0}, Neuron Type: {1}, Number of Neurons: {2}, Seed: {3}".format(
+          ens.neurons, ens.neuron_type, ens.n_neurons, ens.seed))
+      axs[i].plot(sim.data[ens].max_rates, 'ro', label="Max Firing Rates")
+      #axs[i].plot(sim.data[ens].encoders, 'g--', label="Encoders")
+      print("Layer: {0}, Neuron Type: {1}, Number of Neurons: {2}, Seed: {3}".format(
+            ens.neurons, ens.neuron_type, ens.n_neurons, ens.seed))
+      print("Unique Encoders: {}".format(np.unique(sim.data[ens].encoders)))
+      #axs[i].plot(sim.data[ens].scaled_encoders, 'b+', label="Scaled Encoders")
+      print("Unique Scaled Encoders: {}".format(
+            np.unique(sim.data[ens].scaled_encoders)))
+      #axs[i].plot(sim.data[ens].bias, 'g^', label="Bias")
+      print("Unique bias: {}".format(np.unique(sim.data[ens].bias)))
+      #axs[i].plot(sim.data[ens].gain, 'b:', label="Gain")
+      print("Unique gain: {}".format(np.unique(sim.data[ens].gain)))
+      #axs[i].plot(sim.data[ens].intercepts, 'r1', label="Intercepts")
+      print("Unique intercepts: {}".format(np.unique(sim.data[ens].intercepts)))
+      axs[i].legend()
+      axs[i].set_xlabel("Neuron Indices")
+      print("*"*100)
+
+      # Plot the Tuning Curves.
+      if do_plot_tuning_curves:
+        axs1[i].set_title("Tuning Curves for {}".format(ens.neurons))
+        x, act_mat = nengo.utils.ensemble.tuning_curves(ens, sim)
+        for j in range(ens.n_neurons):
+          axs1[i].plot(act_mat[:, j])
+        axs1[i].set_xlabel("x - values")
+
+    fig.tight_layout()
+    fig.show()
+    fig1.tight_layout()
+    fig1.show()
     pass # No need to execute the simlation, as we just need the compiled model.
-
-  # Get the info for each layer except the first (input) and last (output) layer.
-  layers = list(ndl_model.layers.dict.values())[1:-1] # The layers are ordered.
-  fig, axs = plt.subplots(len(layers), figsize=(16, 3*len(layers)))
-  if do_plot_tuning_curves:
-    fig1, axs1 = plt.subplots(len(layers), figsize=(16, 2*len(layers)))
-
-  for i, layer in enumerate(layers):
-    ens = layer.ensemble
-    # Plot the general info.
-    axs[i].set_title(
-        "Layer: {0}, Neuron Type: {1}, Number of Neurons: {2}, Seed: {3}".format(
-        ens.neurons, ens.neuron_type, ens.n_neurons, ens.seed))
-    axs[i].plot(sim.data[ens].max_rates, 'ro', label="Max Firing Rates")
-    axs[i].plot(sim.data[ens].encoders, 'g--', label="Encoders")
-    axs[i].plot(sim.data[ens].scaled_encoders, 'b+', label="Scaled Encoders")
-    axs[i].plot(sim.data[ens].bias, 'g^', label="Bias")
-    axs[i].plot(sim.data[ens].gain, 'b:', label="Gain")
-    axs[i].plot(sim.data[ens].itercepts, 'r1', label="Intercepts")
-    axs[i].legend()
-    axs[i].set_xlabel("Neuron Indices")
-
-    # Plot the Tuning Curves.
-    if do_plot_tuning_curves:
-      axs1[i].set_title("Tuning Curves for {}".format(ens.neurons))
-      x, act_mat = nengo.utils.ensemble.tuning_curves(ens, sim)
-      for j in range(ens.n_neurons):
-        axs1[i].plot(act_mat[:, j])
-      axs1[i].set_xlabel("x - values")
-
-  fig.show()
-  fig1.show()
