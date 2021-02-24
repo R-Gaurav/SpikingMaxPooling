@@ -57,3 +57,6 @@ def get_nengo_dl_model(inpt_shape, exp_cfg, nengo_cfg, mode="test", num_clss=10)
   nengo_probes_obj_lst.append(nengo_output)
 
   return nengo_model, nengo_probes_obj_lst
+
+def percentile_l2_loss_range(y_true, y):
+  pass
