@@ -24,8 +24,8 @@ def _get_2d_cnn_block(conv, layer_cfg, exp_cfg, layer_objs_lst):
   conv = tf.keras.layers.Conv2D(
     layer_cfg.num_kernels, layer_cfg.kernel_dims, strides=layer_cfg.stride_dims,
     padding="same", data_format="channels_last", activation="relu",
-    kernel_initializer="he_uniform",
-    kernel_regularizer=tf.keras.regularizers.l2(exp_cfg["rf"]))(conv)
+    kernel_initializer="he_uniform",)(conv)
+    #kernel_regularizer=tf.keras.regularizers.l2(exp_cfg["rf"]))(conv)
 
   layer_objs_lst.append(conv)
   return conv
@@ -44,8 +44,8 @@ def _get_dense_block(block, exp_cfg, layer_objs_lst, actvn="relu"):
     tf.Tensor.
   """
   dense = tf.keras.layers.Dense(
-    exp_cfg["nn_dlyr"], activation=actvn, kernel_initializer="he_uniform",
-    kernel_regularizer=tf.keras.regularizers.l2(exp_cfg["rf"]))(block)
+    exp_cfg["nn_dlyr"], activation=actvn, kernel_initializer="he_uniform",)(block)
+    #kernel_regularizer=tf.keras.regularizers.l2(exp_cfg["rf"]))(block)
   layer_objs_lst.append(dense)
 
   return dense

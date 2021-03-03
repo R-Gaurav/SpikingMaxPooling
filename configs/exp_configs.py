@@ -12,9 +12,9 @@ model = MODEL_1
 
 tf_exp_cfg = {
   "rf": 5e-5,
-  "batch_size": 64,
-  "epochs": 16,
-  "lr": 1e-4,
+  "batch_size": 200,
+  "epochs": 20,
+  "lr": 1e-3,
   "nn_dlyr": 512,
   "tf_model": model,
   "tf_wts_otpt_dir": EXP_OTPT_DIR + "/cifar10/%s/tf_trained_wts/" % model["name"],
@@ -33,7 +33,7 @@ nengo_dl_cfg = {
       #None
       ),
   "sfr": (
-      100
+      250
       #1
       ),
   "n_steps": (
@@ -41,7 +41,7 @@ nengo_dl_cfg = {
       #1
       ),
   "test_batch_size": 100,
-  "train_batch_size": 16,
+  "train_batch_size": 200,
 }
 
 pathlib.Path(nengo_dl_cfg["ndl_res_otpt_dir"]).mkdir(parents=True, exist_ok=True)
