@@ -4,49 +4,78 @@
 import numpy as np
 import tensorflow as tf
 
-def get_cifar_10_data():
+from . import log
+
+import _init_paths
+
+from utils.consts.exp_consts import MNIST, CIFAR10
+
+def get_exp_dataset(dataset, channels_first=True):
   """
-  Returns normalized CIFAR-10 images and binarized (i.e. one-hot encoded) labels.
+  Returns MNIST data with first dimension as the channel dimension if
+  `channels_first` = True.
+
+  Args:
+    dataset <str>: One of MNIST | CIFAR10.
+    channels_first <bool>: Make the first dimension as channel dimension if True.
 
   Returns:
     numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray
   """
-  # Dataset download
-  (train_x, train_y), (test_x, test_y) = tf.keras.datasets.cifar10.load_data()
+  if dataset == CIFAR10:
+    log.INFO("Getting CIFAR10 datasset...")
+    (train_x, train_y), (test_x, test_y) = tf.keras.datasets.cifar10.load_data()
+  elif dataset == MNIST:
+    log.INFO("Getting MNIST dataset...")
+    (train_x, train_y), (test_x, test_y) = tf.keras.datasets.mnist.load_data()
+    train_x, test_x = np.expand_dims(train_x, -1), np.expand_dims(test_x, -1)
+    train_y, test_y = np.expand_dims(train_y, -1), np.expand_dims(test_y, -1)
+
   # Normalize the images in range [-1, 1]
   train_x = train_x.astype(np.float32) / 127.5 - 1
   test_x = test_x.astype(np.float32) / 127.5 - 1
+
+  # Default image data format is "channels_last", change the image data to
+  # "channels_first" if required.
+  if channels_first:
+    train_x, test_x = np.moveaxis(train_x, -1, 1), np.moveaxis(test_x, -1, 1)
+  log.INFO("{0} data with shape (train_x) : {1}, (test_x): {2}".format(dataset,
+           train_x.shape, test_x.shape))
   # Binarize the labels.
   train_y = np.eye(10, dtype=np.float32)[train_y].squeeze(axis=1)
   test_y = np.eye(10, dtype=np.float32)[test_y].squeeze(axis=1)
 
   return train_x, train_y, test_x, test_y
 
-def get_batches_of_cifar_data(ngo_cfg, ndl_model=None, ndl_mdl_probes=None,
+def get_batches_of_exp_dataset(ndl_cfg, ndl_model=None, ndl_mdl_probes=None,
                               is_test=True):
   """
   Returns the batches of training or test data.
 
   Args:
-    ngo_cfg <dict>: The Nengo-DL related configuration.
+    ndl_cfg <dict>: The Nengo-DL related configuration.
     ndl_model <nengo_dl.Converter>: The Nengo-DL converted model.
     is_test <True>: Returns the test batches if True else Train batches.
 
   Returns
     (np.ndarray, np.ndarray): Train/Test images, Train/Test classes.
   """
+  log.INFO("Getting Nengo-DL data for dataset: %s" % ndl_cfg["dataset"])
   if is_test:
-    batch_size = ngo_cfg["test_batch_size"]
-    _, _, imgs, clss = get_cifar_10_data()
+    batch_size = ndl_cfg["test_mode"]["test_batch_size"]
+    _, _, imgs, clss = get_exp_dataset(ndl_cfg["dataset"])
   else:
-    assert ngo_cfg["n_steps"] == 1
-    batch_size = ngo_cfg["train_batch_size"]
-    imgs, clss, _, _ = get_cifar_10_data()
+    assert ndl_cfg["train_mode"]["n_steps"] == 1
+    batch_size = ndl_cfg["train_mode"]["train_batch_size"]
+    imgs, clss, _, _ = get_exp_dataset(ndl_cfg["dataset"])
     clss = clss.reshape((clss.shape[0], 1, -1))
 
   num_instances = imgs.shape[0]
   imgs = imgs.reshape((num_instances, 1, -1))
-  tiled_imgs = np.tile(imgs, (1, ngo_cfg["n_steps"], 1))
+  if is_test:
+    tiled_imgs = np.tile(imgs, (1, ndl_cfg["test_mode"]["n_steps"], 1))
+  else:
+    tiled_imgs = np.tile(imgs, (1, ndl_cfg["train_mode"]["n_steps"], 1))
 
   if is_test:
     for start in range(0, num_instances, batch_size):
@@ -82,9 +111,9 @@ def get_batches_of_cifar_data(ngo_cfg, ndl_model=None, ndl_mdl_probes=None,
         # layers, as "dense.0.bias" and "dense_1.0.bias" do not appear, having
         # them or not in the `input_dict` does not matter while training/test.
         #########################################################################
-        "dense.0.bias": np.ones((batch_size, 10, 1), dtype=np.int32),
+        #"dense.0.bias": np.ones((batch_size, 10, 1), dtype=np.int32),
         #nodes[7].label + ".0.bias": np.ones((batch_size, 10, 1), dtype=np.int32),
-        "dense_1.0.bias": np.ones((batch_size, 10, 1), dtype=np.int32),
+        #"dense_1.0.bias": np.ones((batch_size, 10, 1), dtype=np.int32),
         #nodes[8].label + ".0.bias": np.ones((batch_size, 10, 1), dtype=np.int32)
         "dense_2.0.bias": np.ones((batch_size, 10, 1), dtype=np.int32),
       }

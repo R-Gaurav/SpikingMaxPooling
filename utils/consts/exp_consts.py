@@ -2,4 +2,6 @@
 # Author: Ramashish Gaurav
 #
 
-SEED = 0
+SEED = 90
+MNIST = "mnist"
+CIFAR10 = "cifar10"

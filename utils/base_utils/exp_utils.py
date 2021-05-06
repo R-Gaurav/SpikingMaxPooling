@@ -323,3 +323,51 @@ def plot_ndl_model_layers_info(do_plot_tuning_curves=True):
     fig1.tight_layout()
     fig1.show()
     pass # No need to execute the simlation, as we just need the compiled model.
+
+def get_grouped_slices_2d_pooling(**kwargs):
+  """
+  Creates square grouped slices based on the `pool_size`. E.g. for a flattened
+  array, the indices are [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  ...] with `pool_size` = (2, 2), `rows=4`, `cols=4`, the flattened array is
+  actually:
+  [[0, 1, 2, 3],
+   [4, 5, 6, 7],
+   [8, 9, 10, 11],
+   [12, 13, 14, 15]]
+
+  so the returned grouped slices array should be of indices:
+  [0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 12, 13, 10, 11, 14, 15, ...]
+
+  Note: It expects the "Channels First" coding of Input/Conv layers. It is also
+  assumed that the input `rows` and `cols` are of same size and `pool_size` also
+  has same row/col dimension.
+
+  Args:
+    kwargs <dict>:
+      pool_size <tuple>: (int, int) for 2D Pooling - (row, col) arrangement.
+      num_chnls <int>: Number of channels in the reshaped matrix.
+      rows <int>: Number of rows in the reshaped matrix.
+      cols <int>: Number of columns in the reshaped matrix.
+
+  Returns:
+    <[int]>
+  """
+  pool_size, num_chnls, rows, cols = (
+      kwargs["pool_size"], kwargs["num_chnls"], kwargs["rows"], kwargs["cols"])
+  matrix = np.arange(rows * cols * num_chnls).reshape((num_chnls, rows, cols))
+  grouped_slice = np.zeros(rows * cols * num_chnls, dtype=int)
+  start, slice_len = 0, np.prod(pool_size)
+
+  for chnl in range(num_chnls):
+    for row in range(rows//pool_size[0]):
+      for col in range(cols//pool_size[1]):
+        grouped_slice[start:start+slice_len] = (
+            matrix[chnl, row*pool_size[0]:row*pool_size[0]+pool_size[0],
+                   col*pool_size[1]:col*pool_size[1]+pool_size[1]]).flatten()
+        start += slice_len
+
+  # Return the grouped slices of valid length in case of odd rows/cols.
+  if rows % 2 and cols % 2:
+    return grouped_slice[: num_chnls*(rows-1)*(cols-1)]
+
+  return grouped_slice
