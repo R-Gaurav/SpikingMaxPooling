@@ -58,6 +58,18 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
         inference_only=True,
         max_to_avg_pool=max_to_avg_pool
     )
+
+    # Explicitly set the connection synapse from Conv to MaxPooling layers.
+    for i, conn in enumerate(ndl_model.net.all_connections):
+      if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
+        if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
+            conn.post_obj.label.startswith("max_pooling")):
+          log.INFO("Connection: {}, | and prior to explicit synapsing: {}".format(
+              conn, conn.synapse))
+          ndl_model.net._connections[i].synapse = nengo.Lowpass(test_cfg["synapse"])
+          log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
+              conn, conn.synapse))
+
   else:
     train_cfg = ndl_cfg["train_mode"]
     log.INFO("Train Mode: Converting the obtained TF model to Nengo-DL model..")
@@ -129,8 +141,8 @@ def nengo_dl_focal_loss(y_true, y_pred):
   loss = SparseCategoricalFocalLoss(gamma=2.0)
   return loss(y_true, y_pred)
 
-def get_network_for_2x2_max_pooling(seed=90, max_rate=250, radius=1, sf=1,
-                                    do_max=True):
+def get_network_for_2x2_max_pooling(seed=SEED, max_rate=250, radius=1, sf=1,
+                                    do_max=True, synapse=None):
   """
   Returns a network for associative max pooling using |x| calculation.
 
@@ -141,6 +153,7 @@ def get_network_for_2x2_max_pooling(seed=90, max_rate=250, radius=1, sf=1,
                   i.e. representational radius)
     sf <int>: Scale factor by which to scale the inputs.
     do_max <bool>: Do MaxPooling if True else do AvgPooling.
+    synapse <float>: Synaptic time constant.
 
   Returns:
     nengo.Network
@@ -175,9 +188,9 @@ def get_network_for_2x2_max_pooling(seed=90, max_rate=250, radius=1, sf=1,
       nengo.Connection(net.input[0], ens_12, synapse=None, transform=sf/2)
       nengo.Connection(net.input[1], ens_12, synapse=None, transform=-sf/2)
       nengo.Connection(
-          ens_12.neurons[0], node_12, synapse=0.005, transform=1*radius/max_rate)
+          ens_12.neurons[0], node_12, synapse=synapse, transform=1*radius/max_rate)
       nengo.Connection(
-          ens_12.neurons[1], node_12, synapse=0.005, transform=1*radius/max_rate)
+          ens_12.neurons[1], node_12, synapse=synapse, transform=1*radius/max_rate)
     ############################################################################
 
     ############################################################################
@@ -191,30 +204,31 @@ def get_network_for_2x2_max_pooling(seed=90, max_rate=250, radius=1, sf=1,
       nengo.Connection(net.input[2], ens_34, synapse=None, transform=sf/2)
       nengo.Connection(net.input[3], ens_34, synapse=None, transform=-sf/2)
       nengo.Connection(
-          ens_34.neurons[0], node_34, synapse=0.005, transform=1*radius/max_rate)
+          ens_34.neurons[0], node_34, synapse=synapse, transform=1*radius/max_rate)
       nengo.Connection(
-          ens_34.neurons[1], node_34, synapse=0.005, transform=1*radius/max_rate)
+          ens_34.neurons[1], node_34, synapse=synapse, transform=1*radius/max_rate)
     ############################################################################
 
     ############################################################################
     # Calculate max(a, b, c, d) = max(max(a, b), max(c, d)).
     # Calculate (node_12 + node_34)/2.
-    nengo.Connection(node_12, net.output, synapse=0.005, transform=1/2)
-    nengo.Connection(node_34, net.output, synapse=0.005, transform=1/2)
+    nengo.Connection(node_12, net.output, synapse=synapse, transform=1/2)
+    nengo.Connection(node_34, net.output, synapse=synapse, transform=1/2)
 
     if do_max:
       # Calculate |node_12 - node_34|/2.
-      nengo.Connection(node_12, ens_1234, synapse=0.005, transform=1/2)
-      nengo.Connection(node_34, ens_1234, synapse=0.005, transform=-1/2)
+      nengo.Connection(node_12, ens_1234, synapse=synapse, transform=1/2)
+      nengo.Connection(node_34, ens_1234, synapse=synapse, transform=-1/2)
       nengo.Connection(
-          ens_1234.neurons[0], net.output, synapse=0.005, transform=1*radius/max_rate)
+          ens_1234.neurons[0], net.output, synapse=synapse, transform=1*radius/max_rate)
       nengo.Connection(
-          ens_1234.neurons[1], net.output, synapse=0.005, transform=1*radius/max_rate)
+          ens_1234.neurons[1], net.output, synapse=synapse, transform=1*radius/max_rate)
     ############################################################################
 
   return net
 
-def get_max_pool_global_net(mp_input_size, seed=90, max_rate=250, radius=1, sf=1):
+def get_max_pool_global_net(mp_input_size, seed=SEED, max_rate=250, radius=1,
+                            sf=1, do_max=True, synapse=None):
   """
   Returns the global max pool net, where there are multiple small max pool subnets
   to compute max over 4 numbers. Note that the flattened vector over which MaxPool
@@ -231,6 +245,8 @@ def get_max_pool_global_net(mp_input_size, seed=90, max_rate=250, radius=1, sf=1
     radius <int>: Value at which maximum spiking rate occurs (
                   i.e. representational radius)
     sf <int>: Scale factor by which to scale the inputs.
+    do_max <bool>: Do MaxPooling if True else do AvgPooling.
+    synapse <float>: Synaptic time constant.
 
   Returns:
     nengo.Network
@@ -240,7 +256,8 @@ def get_max_pool_global_net(mp_input_size, seed=90, max_rate=250, radius=1, sf=1
     net.output = nengo.Node(size_in=mp_input_size//4)
 
     for i in range(mp_input_size//4):
-      mp_subnet = get_network_for_2x2_max_pooling(seed, max_rate, radius, sf)
+      mp_subnet = get_network_for_2x2_max_pooling(
+          seed, max_rate, radius, sf, do_max=do_max, synapse=synapse)
       # Connect the grouped slice of 4 numbers to the `mp_subnet`. Make sure that
       # the Connection to `net.input` is already synapsed when connecting to this
       # global max pool net, thus no need to synapse further to the subnets.

@@ -59,6 +59,13 @@ nengo_dl_cfg = {
   }
 }
 
+asctv_max_cfg = {
+    "conv2d.0": {"max_rate": 250, "radius": 3, "sf": 1.2, "synapse": 0.001},
+    "conv2d_1.0": {"max_rate": 250, "radius": 2, "sf": 1.2, "synapse": 0.001},
+    "conv2d_2.0": {"max_rate": 250, "radius": 1.5, "sf": 1.2, "synapse": 0.001},
+    "conv2d_3.0": {"max_rate": 250, "radius": 1, "sf": 1.2, "synapse": 0.001},
+  }
+
 pathlib.Path(tf_exp_cfg["tf_wts_otpt_dir"]).mkdir(parents=True, exist_ok=True)
 pathlib.Path(tf_exp_cfg["tf_res_otpt_dir"]).mkdir(parents=True, exist_ok=True)
 pathlib.Path(nengo_dl_cfg["test_mode"]["ndl_test_mode_res_otpt_dir"]).mkdir(

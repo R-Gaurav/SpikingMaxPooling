@@ -32,8 +32,8 @@ def get_exp_dataset(dataset, channels_first=True):
     train_y, test_y = np.expand_dims(train_y, -1), np.expand_dims(test_y, -1)
 
   # Normalize the images in range [-1, 1]
-  train_x = train_x.astype(np.float32) / 127.5 - 1
-  test_x = test_x.astype(np.float32) / 127.5 - 1
+  #train_x = train_x.astype(np.float32) / 127.5 - 1
+  #test_x = test_x.astype(np.float32) / 127.5 - 1
 
   # Default image data format is "channels_last", change the image data to
   # "channels_first" if required.

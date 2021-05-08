@@ -46,13 +46,13 @@ def _get_max_pool_block(block, layer_cfg, layer_objs_lst):
 
   return max_pool
 
-def _get_dense_block(block, exp_cfg, layer_objs_lst, actvn="relu"):
+def _get_dense_block(block, nn_dlyr, layer_objs_lst, actvn="relu"):
   """
   Returns a dense block.
 
   Args:
     block <tf.Tensor>: A TF Tensor.
-    exp_cfg <{}>: The experimental configuration dict.
+    nn_dlyr <int>: Number of neurons in the dense layer.
     layer_objs_lst <[]>: The list of layer objects.
     actvn <str>: The activation function.
 
@@ -60,7 +60,7 @@ def _get_dense_block(block, exp_cfg, layer_objs_lst, actvn="relu"):
     tf.Tensor.
   """
   dense = tf.keras.layers.Dense(
-    exp_cfg["nn_dlyr"], activation=actvn, kernel_initializer="he_uniform",)(block)
+      nn_dlyr, activation=actvn, kernel_initializer="he_uniform",)(block)
   layer_objs_lst.append(dense)
 
   return dense
@@ -91,12 +91,14 @@ def get_2d_cnn_model(inpt_shape, exp_cfg, num_clss=10):
     elif layer.name == "MaxPool":
       x = _get_max_pool_block(x, layer, layer_objs_lst)
   # Flatten
-  x = tf.keras.layers.Flatten(data_format=layer.data_format)(x)
+  # FIXME: Probable bug in Nengo-DL where data_format = "channels_last" in
+  # Flatten layer results in garbage predictions.
+  #x = tf.keras.layers.Flatten(data_format=layer.data_format)(x)
+  x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
-  x = _get_dense_block(x, exp_cfg, layer_objs_lst)
+  x = _get_dense_block(x, exp_cfg["nn_dlyr"], layer_objs_lst)
   # Add the final output Dense block.
-  exp_cfg["nn_dlyr"] = num_clss
-  output_lyr = _get_dense_block(x, exp_cfg, layer_objs_lst, actvn="softmax")
+  output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
 
   model = tf.keras.Model(inputs=inpt_lyr, outputs=output_lyr)
   return model, layer_objs_lst
