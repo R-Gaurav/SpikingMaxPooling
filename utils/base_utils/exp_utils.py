@@ -355,19 +355,19 @@ def get_grouped_slices_2d_pooling(**kwargs):
   pool_size, num_chnls, rows, cols = (
       kwargs["pool_size"], kwargs["num_chnls"], kwargs["rows"], kwargs["cols"])
   matrix = np.arange(rows * cols * num_chnls).reshape((num_chnls, rows, cols))
-  grouped_slice = np.zeros(rows * cols * num_chnls, dtype=int)
+  grouped_slices = np.zeros(rows * cols * num_chnls, dtype=int)
   start, slice_len = 0, np.prod(pool_size)
 
   for chnl in range(num_chnls):
     for row in range(rows//pool_size[0]):
       for col in range(cols//pool_size[1]):
-        grouped_slice[start:start+slice_len] = (
+        grouped_slices[start:start+slice_len] = (
             matrix[chnl, row*pool_size[0]:row*pool_size[0]+pool_size[0],
                    col*pool_size[1]:col*pool_size[1]+pool_size[1]]).flatten()
         start += slice_len
 
   # Return the grouped slices of valid length in case of odd rows/cols.
-  if rows % 2 and cols % 2:
-    return grouped_slice[: num_chnls*(rows-1)*(cols-1)]
+  #if rows % 2 and cols % 2:
+  #  return grouped_slices[: num_chnls*(rows-1)*(cols-1)]
 
-  return grouped_slice
+  return grouped_slices

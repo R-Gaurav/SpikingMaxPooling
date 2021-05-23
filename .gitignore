@@ -2,3 +2,5 @@
 src/*/*/*.pyc
 utils/*/*/*.pyc
 
+runtime_outputs/*
+

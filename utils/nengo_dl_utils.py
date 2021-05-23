@@ -96,7 +96,11 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
       nengo_dl.configure_settings(keep_history=False)
     nengo_dl.configure_settings(stateful=False)
     for lyr_obj in layer_objs_lst[1:-1]:
-      nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
+      # Skip the probes for MaxPooling layers as they won't be present in the
+      # Associative-Max based SNN, else execution will error out.
+      # TODO: Include it for other analysis though.
+      if not lyr_obj.name.startswith("max_pooling"):
+        nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
   # Set the probes on the Output layer of the Nengo-DL model.
   nengo_output = ndl_model.outputs[layer_objs_lst[-1]]
   nengo_probes_obj_lst.append(nengo_output)
@@ -219,10 +223,10 @@ def get_network_for_2x2_max_pooling(seed=SEED, max_rate=250, radius=1, sf=1,
       # Calculate |node_12 - node_34|/2.
       nengo.Connection(node_12, ens_1234, synapse=synapse, transform=1/2)
       nengo.Connection(node_34, ens_1234, synapse=synapse, transform=-1/2)
-      nengo.Connection(
-          ens_1234.neurons[0], net.output, synapse=synapse, transform=1*radius/max_rate)
-      nengo.Connection(
-          ens_1234.neurons[1], net.output, synapse=synapse, transform=1*radius/max_rate)
+      nengo.Connection(ens_1234.neurons[0], net.output, synapse=synapse,
+                       transform=1*radius/max_rate)
+      nengo.Connection(ens_1234.neurons[1], net.output, synapse=synapse,
+                       transform=1*radius/max_rate)
     ############################################################################
 
   return net
@@ -251,11 +255,17 @@ def get_max_pool_global_net(mp_input_size, seed=SEED, max_rate=250, radius=1,
   Returns:
     nengo.Network
   """
+  num_chnls, rows, cols = mp_input_size
   with nengo.Network(label="custom_max_pool_layer", seed=seed) as net:
-    net.input = nengo.Node(size_in=mp_input_size)
-    net.output = nengo.Node(size_in=mp_input_size//4)
+    net.input = nengo.Node(size_in=np.prod(mp_input_size))
+    if rows % 2 and cols % 2:
+      out_size = (num_chnls * (rows-1) * (cols-1))//4
+    else:
+      out_size = np.prod(mp_input_size)//4
 
-    for i in range(mp_input_size//4):
+    net.output = nengo.Node(size_in=out_size)
+
+    for i in range(out_size):
       mp_subnet = get_network_for_2x2_max_pooling(
           seed, max_rate, radius, sf, do_max=do_max, synapse=synapse)
       # Connect the grouped slice of 4 numbers to the `mp_subnet`. Make sure that
@@ -263,6 +273,6 @@ def get_max_pool_global_net(mp_input_size, seed=SEED, max_rate=250, radius=1,
       # global max pool net, thus no need to synapse further to the subnets.
       nengo.Connection(net.input[i*4 : i*4+4], mp_subnet.input, synapse=None)
       # MaxPool is calculated over already synpased inputs, so no need to synapse.
-      nengo.Connection(mp_subnet.output, net.output[i])
+      nengo.Connection(mp_subnet.output, net.output[i], synapse=None)
 
   return net

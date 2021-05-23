@@ -41,7 +41,7 @@ nengo_dl_cfg = {
   "test_mode": {
     "spk_neuron": nengo.SpikingRectifiedLinear(),
     "synapse": 0.005,
-    "sfr": 100,
+    "sfr": 25,
     "n_steps": 60,
     "test_batch_size": 100,
     "ndl_test_mode_res_otpt_dir": (
@@ -64,7 +64,7 @@ asctv_max_cfg = {
     "conv2d_1.0": {"max_rate": 250, "radius": 2, "sf": 1.2, "synapse": 0.001},
     "conv2d_2.0": {"max_rate": 250, "radius": 1.5, "sf": 1.2, "synapse": 0.001},
     "conv2d_3.0": {"max_rate": 250, "radius": 1, "sf": 1.2, "synapse": 0.001},
-  }
+}
 
 pathlib.Path(tf_exp_cfg["tf_wts_otpt_dir"]).mkdir(parents=True, exist_ok=True)
 pathlib.Path(tf_exp_cfg["tf_res_otpt_dir"]).mkdir(parents=True, exist_ok=True)
