@@ -12,10 +12,12 @@ from focal_loss import SparseCategoricalFocalLoss
 
 from utils.base_utils import log
 from utils.cnn_2d_utils import get_2d_cnn_model
-from utils.consts.exp_consts import SEED
+from utils.consts.exp_consts import (
+    SEED, NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI, MAX_POOL_MASK, NUM_X)
 
 def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
-                       collect_probe_history=True, max_to_avg_pool=False):
+                       is_isi_based_max_pool=False, collect_probe_history=True,
+                       max_to_avg_pool=False):
   """
   Returns the nengo_dl model.
 
@@ -58,17 +60,40 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
         inference_only=True,
         max_to_avg_pool=max_to_avg_pool
     )
+    # If `is_isi_based_max_pool` is set to True, then do NOT synapse the
+    # connections to MaxPooling layers so as to receive the spikes and not the
+    # synpased values. If not set to True, then synapse the connections to
+    # MaxPooling layers.
+    if not is_isi_based_max_pool:
+      # Explicitly set the connection synapse from Conv to MaxPooling layers.
+      for i, conn in enumerate(ndl_model.net.all_connections):
+        if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
+          if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
+              conn.post_obj.label.startswith("max_pooling")):
+            log.INFO(
+                "Connection: {}, | and prior to explicit synapsing: {}".format(
+                conn, conn.synapse))
+            ndl_model.net._connections[i].synapse = nengo.Lowpass(
+                test_cfg["synapse"])
+            log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
+                conn, conn.synapse))
 
-    # Explicitly set the connection synapse from Conv to MaxPooling layers.
-    for i, conn in enumerate(ndl_model.net.all_connections):
-      if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
-        if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
-            conn.post_obj.label.startswith("max_pooling")):
-          log.INFO("Connection: {}, | and prior to explicit synapsing: {}".format(
-              conn, conn.synapse))
-          ndl_model.net._connections[i].synapse = nengo.Lowpass(test_cfg["synapse"])
-          log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
-              conn, conn.synapse))
+    # If `is_isi_based_max_pool` is set to True then since the incoming spikes
+    # to the MaxPooling layers were not synpased, we need to synapse the selected
+    # outgoing spikes from the MaxPooling layer to the next Conv layer.
+    if is_isi_based_max_pool:
+      # Explicitly set the connection synapse from MaxPooling layers to Conv.
+      for i, conn in enumerate(ndl_model.net.all_connections):
+        if (isinstance(conn.pre_obj, nengo_dl.tensor_node.TensorNode) and
+            conn.pre_obj.label.startswith("max_pooling")):
+          if isinstance(conn.post_obj, nengo.ensemble.Neurons):
+            log.INFO(
+                "Connection: {}, | and prior to explicit synapsing: {}".format(
+                conn, conn.synapse))
+            ndl_model.net._connections[i].synapse = nengo.Lowpass(
+                test_cfg["synapse"])
+            log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
+                conn, conn.synapse))
 
   else:
     train_cfg = ndl_cfg["train_mode"]
@@ -276,3 +301,118 @@ def get_max_pool_global_net(mp_input_size, seed=SEED, max_rate=250, radius=1,
       nengo.Connection(mp_subnet.output, net.output[i], synapse=None)
 
   return net
+
+def get_isi_based_maximally_spiking_mask(t, x):
+  """
+  Sets a binary mask of size NUM_X (constituting of all 0s except one 1) which
+  corresponds to the maximally spiking neuron in the group of `x`. The binary
+  mask is set in MAX_POOL_MASK.
+
+  Args:
+    t <float>: The simulation timestep.
+    x <numpy.array>: The incoming spiking activity of neurons in groups of NUM_X.
+                     i.e. size of the pooling matrix, e.g. [10.0, 0.0, 0.0, 10.0]
+                     where 10.0 is the spiking amplitude if the neuron spiked,
+                     else 0.0.
+
+  Note: When two or more neurons have smallest ISI, we choose the neuron whose
+  index is smallest. This can be suboptimal.
+  """
+  def _isi_max_pooling(t, x, chnl, r1, r2, c1, c2):
+    int_t = int(t*1000.0)
+    # Get the local copies of updated NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
+    # and MAX_POOL_MASK for each timestep `t`.
+    neurons_last_spiked_ts = NEURONS_LAST_SPIKED_TS[chnl, r1:r2, c1:c2].flatten()
+    neurons_latest_isi = NEURONS_LATEST_ISI[chnl, r1:r2, c1:c2].flatten()
+    max_pool_mask = MAX_POOL_MASK[chnl, r1:r2, c1:c2].flatten()
+    spiked_neurons_mask = np.logical_not(np.isin(x, 0))
+
+    # Case 1: None of the neurons in the considered pooling matrix spiked in this
+    # timestep, therefore leave the MACROS unchanged. Since none spiked, the
+    # `x` is all 0, hence whatever is the value of MAX_POOL_MASK, the dot product
+    # will be 0.
+    if np.all(spiked_neurons_mask==False):
+      pass
+      # TODO: Check by setting max_pool_mask = np.zeros((4)).
+
+    # One or more of the neurons have spiked in this timestep.
+    # Case 2: Check if the currently spiked neurons spiked previously as well?
+    if np.any(neurons_last_spiked_ts[spiked_neurons_mask]):
+      # One of more of the currently spiked neurons spiked previously as well.
+      # Therefore update only their's latest ISI. Take bitwise `&` operation
+      # between the currently spiked_neurons_mask and neurons_last_spiked_ts_mask.
+      neurons_last_spiked_ts_mask = np.logical_not(
+          np.isin(neurons_last_spiked_ts, 0))
+      neurons_whose_isi_to_be_updated = (
+          neurons_last_spiked_ts_mask & spiked_neurons_mask)
+      # Update the latest ISI of the selected neurons.
+      neurons_latest_isi[neurons_whose_isi_to_be_updated] = (
+          int_t - neurons_last_spiked_ts[neurons_whose_isi_to_be_updated])
+      # Create a max_pool_mask.
+      max_pool_mask[:] = np.zeros(NUM_X)
+      # Set the mask to 1.0 for the neuron with minimum ISI.
+      max_pool_mask[np.argmin(neurons_latest_isi)] = 1.0
+      # Update the neurons_last_spiked_ts.
+      neurons_last_spiked_ts[spiked_neurons_mask] = int_t
+
+      NEURONS_LAST_SPIKED_TS[chnl, r1:r2, c1:c2] = (
+          neurons_last_spiked_ts.reshape(2, 2))
+      NEURONS_LATEST_ISI[chnl, r1:r2, c1:c2] = neurons_latest_isi.reshape(2, 2)
+      MAX_POOL_MASK[chnl, r1:r2, c1:c2] = max_pool_mask.reshape(2, 2)
+
+    # None of the currently spiked neurons spiked previously! i.e. all the
+    # currently spiked neurons have spiked for the first time. Two possible
+    # situations exist:
+    #   FIRST: There might be few other neurons which could have spiked twice
+    #   or more earlier and did not spike in this current timestep; thus
+    #   the currently spiked neurons spiked for the first time after a number of
+    #   previous timesteps and they don't qualify for maximally spiking neurons.
+    #
+    #   SECOND: There have been no other neurons which have spiked twice
+    #   or more so far, thus, there could be other neurons which spiked first
+    #   in earlier timesteps and did not spike in this current timestep OR the
+    #   currently spiked neurons are the first ones among the pooled group of
+    #   neurons to spike.
+    else:
+      # Check if there are neurons with smallest ISI.
+      if np.min(neurons_latest_isi) != np.inf:
+        # Some of the other neurons spiked twice or more in earlier timesteps.
+        # This means that the currently spiked neurons (which spiked for the
+        # first time) are quite late to spike and we already have neurons which
+        # are frequently spiking, thus they can be candidate for min ISI.
+        max_pool_mask[:] = np.zeros(NUM_X)
+        max_pool_mask[np.argmin(neurons_latest_isi)] = 1.0
+        neurons_last_spiked_ts[spiked_neurons_mask] = int_t
+      else:
+        # There are no neurons which have spiked twice or more earlier, else
+        # their ISI would have been calculated. Therefore choose the index of
+        # neuron which spiked first and set mask to 1.0 for it, rest 0.0.
+        if np.any(neurons_last_spiked_ts):
+          # Found at least one neuron which spiked earlier than the current
+          # timestep.
+          neurons_last_spiked_ts_mask = np.logical_not(
+              np.isin(neurons_last_spiked_ts, 0))
+          min_last_spiked_ts = np.min(
+              neurons_last_spiked_ts[neurons_last_spiked_ts_mask])
+          # Choose the first index if multiple neurons have same minimum last
+          # spiked timestep. This can be suboptimal.
+          earliest_spiked_neuron_index = np.where(
+              neurons_last_spiked_ts == min_last_spiked_ts)[0][0]
+          max_pool_mask[:] = np.zeros(NUM_X)
+          max_pool_mask[earliest_spiked_neuron_index] = 1.0
+          neurons_last_spiked_ts[spiked_neurons_mask] = int_t
+        else:
+          # None of the neurons in the considered pool group have spiked
+          # previously even once! thus, currently spiked neurons are the first
+          # among all to spike. Choose the index of any of the first spiking
+          # neurons and set its mask to 1.0, rest 0.0. (WINNER TAKE ALL?).
+          neurons_last_spiked_ts[spiked_neurons_mask] = int_t
+          max_pool_mask[:] = np.zeros(NUM_X)
+          # Choose the first index if multiple neurons are first spiking ones.
+          # This can be suboptimal.
+          max_pool_mask[np.where(neurons_last_spiked_ts)[0][0]] = 1.0
+
+      NEURONS_LAST_SPIKED_TS[chnl, r1:r2, c1:c2] = (
+          neurons_last_spiked_ts.reshape(2, 2))
+      NEURONS_LATEST_ISI[chnl, r1:r2, c1:c2] = neurons_latest_isi.reshape(2, 2)
+      MAX_POOL_MASK[chnl, r1:r2, c1:c2] = max_pool_mask.reshape(2, 2)

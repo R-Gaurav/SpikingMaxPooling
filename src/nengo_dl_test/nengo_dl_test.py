@@ -186,6 +186,21 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
     # TODO: Delete the `ndl_model` to reclaim GPU memory.
     log.INFO("*"*100)
 
+def _do_isi_based_max_pooling(inpt_shape, num_clss):
+  """
+  Does ISI based MaxPooling.
+
+  Args:
+    inpt_shape <(int, int, int)>: A tuple of Image shape with channels_first order.
+    num_clss <int>: Number of test classes.
+  """
+  log.INFO("Getting the Nengo-DL model with loaded TF trained weights...")
+  ndl_model, ngo_probes_lst = get_nengo_dl_model(
+      inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
+      max_to_avg_pool=False)
+  log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
+  test_batches = get_batches_of_exp_dataset(ndl_cfg, is_test=True)
+
 def nengo_dl_test():
   """
   Loads a TF model weights and tests it in Nengo-DL. It first executes the
