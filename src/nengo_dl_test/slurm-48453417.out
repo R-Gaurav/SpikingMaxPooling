@@ -1,0 +1,246 @@
+Completed configuring logger()!
+TF CONFIG: {'batch_size': 200, 'dataset': 'mnist', 'epochs': 20, 'lr': 0.001, 'nn_dlyr': 64, 'tf_model': {'name': 'model_2', 'layers': {'layer_1': Layer(name='Conv', num_kernels=32, kernel_dims=(3, 3), stride_dims=(1, 1), data_format='channels_first'), 'layer_2': Layer(name='MaxPool', num_kernels=None, kernel_dims=(2, 2), stride_dims=None, data_format='channels_first'), 'layer_3': Layer(name='Conv', num_kernels=64, kernel_dims=(3, 3), stride_dims=(2, 2), data_format='channels_first')}}, 'tf_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/', 'tf_wts_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/'}
+NENGO DL CONFIG: {'dataset': 'mnist', 'tf_wts_inpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/weights', 'test_mode': {'spk_neuron': SpikingRectifiedLinear(), 'synapse': 0.005, 'sfr': 25, 'n_steps': 60, 'test_batch_size': 100, 'ndl_test_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/ndl_test_only_results/', 'skip_isi_tstep': 60}, 'train_mode': {'neuron': RectifiedLinear(), 'synapse': None, 'sfr': 1, 'n_steps': 1, 'train_batch_size': 200, 'ndl_train_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/ndl_train_test_results/'}}
+ASSOCIATIVE MAX CONFIG: {'conv2d.0': {'max_rate': 250, 'radius': 3, 'sf': 1.2, 'synapse': 0.001}, 'conv2d_1.0': {'max_rate': 250, 'radius': 2, 'sf': 1.2, 'synapse': 0.001}, 'conv2d_2.0': {'max_rate': 250, 'radius': 1.5, 'sf': 1.2, 'synapse': 0.001}, 'conv2d_3.0': {'max_rate': 250, 'radius': 1, 'sf': 1.2, 'synapse': 0.001}}
+****************************************************************************************************
+Testing in TensorNode MaxPooling mode...
+Getting the Nengo-DL model with loaded TF trained weights...
+TF Config: {'batch_size': 200, 'dataset': 'mnist', 'epochs': 20, 'lr': 0.001, 'nn_dlyr': 64, 'tf_model': {'name': 'model_2', 'layers': {'layer_1': Layer(name='Conv', num_kernels=32, kernel_dims=(3, 3), stride_dims=(1, 1), data_format='channels_first'), 'layer_2': Layer(name='MaxPool', num_kernels=None, kernel_dims=(2, 2), stride_dims=None, data_format='channels_first'), 'layer_3': Layer(name='Conv', num_kernels=64, kernel_dims=(3, 3), stride_dims=(2, 2), data_format='channels_first')}}, 'tf_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/', 'tf_wts_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/'}
+Nengo-DL Config: {'dataset': 'mnist', 'tf_wts_inpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/weights', 'test_mode': {'spk_neuron': SpikingRectifiedLinear(), 'synapse': 0.005, 'sfr': 25, 'n_steps': 60, 'test_batch_size': 100, 'ndl_test_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/ndl_test_only_results/', 'skip_isi_tstep': 60}, 'train_mode': {'neuron': RectifiedLinear(), 'synapse': None, 'sfr': 1, 'n_steps': 1, 'train_batch_size': 200, 'ndl_train_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/ndl_train_test_results/'}}
+Number of classes: 10
+Nengo DL Mode: test
+Layer name: input_1:0
+Layer config: Layer(name='Conv', num_kernels=32, kernel_dims=(3, 3), stride_dims=(1, 1), data_format='channels_first')
+Layer name: conv2d/Identity:0
+Layer config: Layer(name='MaxPool', num_kernels=None, kernel_dims=(2, 2), stride_dims=None, data_format='channels_first')
+Layer name: max_pooling2d/Identity:0
+Layer config: Layer(name='Conv', num_kernels=64, kernel_dims=(3, 3), stride_dims=(2, 2), data_format='channels_first')
+Writing tf_model.summary() to file ndl_tf_model_summary.txt
+Test Mode: Loading the TF trained weights in the model...
+Test Mode: Converting the TF model to spiking Nengo-DL model...
+/home/rgaurav/miniconda3/envs/latest-nengo-tf/lib/python3.7/site-packages/nengo_dl/converter.py:326: UserWarning: Cannot convert max pooling layers to native Nengo objects; consider setting max_to_avg_pool=True to use average pooling instead. Falling back to TensorNode.
+  % (error_msg + ". " if error_msg else "")
+/home/rgaurav/miniconda3/envs/latest-nengo-tf/lib/python3.7/site-packages/nengo_dl/converter.py:588: UserWarning: Activation type <function softmax at 0x2b1207f16dd0> does not have a native Nengo equivalent; falling back to a TensorNode
+  "falling back to a TensorNode" % activation
+Connection: <Connection from <Neurons of <Ensemble "conv2d.0">> to <TensorNode "max_pooling2d">>, | and prior to explicit synapsing: None
+Connection: <Connection from <Neurons of <Ensemble "conv2d.0">> to <TensorNode "max_pooling2d">>, | and after explicit synapsing: Lowpass(tau=0.005)
+Layer: conv2d.0, Nengo Neuron Type: SpikingRectifiedLinear(), Max Firing Rates: Uniform(low=200, high=400)
+Layer: conv2d_1.0, Nengo Neuron Type: SpikingRectifiedLinear(), Max Firing Rates: Uniform(low=200, high=400)
+Getting the dataset: mnist
+Start testing...
+Getting Nengo-DL data for dataset: mnist
+INFO:utils.base_utils.log:Getting Nengo-DL data for dataset: mnist
+Getting MNIST dataset...
+INFO:utils.base_utils.log:Getting MNIST dataset...
+mnist data with shape (train_x) : (60000, 1, 28, 28), (test_x): (10000, 1, 28, 28)
+INFO:utils.base_utils.log:mnist data with shape (train_x) : (60000, 1, 28, 28), (test_x): (10000, 1, 28, 28)
+2021-05-27 14:20:17.163286: W tensorflow/stream_executor/gpu/asm_compiler.cc:81] Running ptxas --version returned 256
+2021-05-27 14:20:17.225161: W tensorflow/stream_executor/gpu/redzone_allocator.cc:314] Internal: ptxas exited with non-zero error code 256, output: 
+Relying on driver to perform ptx compilation. 
+Modify $PATH to customize ptxas location.
+This message will be only logged once.
+Testing done! Writing max_to_avg_pool: False test accuracy results in log...
+INFO:utils.base_utils.log:Testing done! Writing max_to_avg_pool: False test accuracy results in log...
+Nengo-DL Test Accuracy: 0.9749
+INFO:utils.base_utils.log:Nengo-DL Test Accuracy: 0.9749
+****************************************************************************************************
+INFO:utils.base_utils.log:****************************************************************************************************
+Testing in ISI based MaxPooling mode...
+INFO:utils.base_utils.log:Testing in ISI based MaxPooling mode...
+Getting the Nengo-DL model with loaded TF trained weights...
+INFO:utils.base_utils.log:Getting the Nengo-DL model with loaded TF trained weights...
+TF Config: {'batch_size': 200, 'dataset': 'mnist', 'epochs': 20, 'lr': 0.001, 'nn_dlyr': 64, 'tf_model': {'name': 'model_2', 'layers': {'layer_1': Layer(name='Conv', num_kernels=32, kernel_dims=(3, 3), stride_dims=(1, 1), data_format='channels_first'), 'layer_2': Layer(name='MaxPool', num_kernels=None, kernel_dims=(2, 2), stride_dims=None, data_format='channels_first'), 'layer_3': Layer(name='Conv', num_kernels=64, kernel_dims=(3, 3), stride_dims=(2, 2), data_format='channels_first')}}, 'tf_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/', 'tf_wts_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/'}
+INFO:utils.base_utils.log:TF Config: {'batch_size': 200, 'dataset': 'mnist', 'epochs': 20, 'lr': 0.001, 'nn_dlyr': 64, 'tf_model': {'name': 'model_2', 'layers': {'layer_1': Layer(name='Conv', num_kernels=32, kernel_dims=(3, 3), stride_dims=(1, 1), data_format='channels_first'), 'layer_2': Layer(name='MaxPool', num_kernels=None, kernel_dims=(2, 2), stride_dims=None, data_format='channels_first'), 'layer_3': Layer(name='Conv', num_kernels=64, kernel_dims=(3, 3), stride_dims=(2, 2), data_format='channels_first')}}, 'tf_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/', 'tf_wts_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/'}
+Nengo-DL Config: {'dataset': 'mnist', 'tf_wts_inpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/weights', 'test_mode': {'spk_neuron': SpikingRectifiedLinear(), 'synapse': 0.005, 'sfr': 25, 'n_steps': 60, 'test_batch_size': 100, 'ndl_test_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/ndl_test_only_results/', 'skip_isi_tstep': 60}, 'train_mode': {'neuron': RectifiedLinear(), 'synapse': None, 'sfr': 1, 'n_steps': 1, 'train_batch_size': 200, 'ndl_train_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/ndl_train_test_results/'}}
+INFO:utils.base_utils.log:Nengo-DL Config: {'dataset': 'mnist', 'tf_wts_inpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/tf_trained_wts/weights', 'test_mode': {'spk_neuron': SpikingRectifiedLinear(), 'synapse': 0.005, 'sfr': 25, 'n_steps': 60, 'test_batch_size': 100, 'ndl_test_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/tf_otpts/ndl_test_only_results/', 'skip_isi_tstep': 60}, 'train_mode': {'neuron': RectifiedLinear(), 'synapse': None, 'sfr': 1, 'n_steps': 1, 'train_batch_size': 200, 'ndl_train_mode_res_otpt_dir': '/scratch/rgaurav//spiking_investigation/experiment_outputs//mnist/model_2/ndl_train_test_results/'}}
+Number of classes: 10
+INFO:utils.base_utils.log:Number of classes: 10
+Nengo DL Mode: test
+INFO:utils.base_utils.log:Nengo DL Mode: test
+Layer name: input_2:0
+INFO:utils.base_utils.log:Layer name: input_2:0
+Layer config: Layer(name='Conv', num_kernels=32, kernel_dims=(3, 3), stride_dims=(1, 1), data_format='channels_first')
+INFO:utils.base_utils.log:Layer config: Layer(name='Conv', num_kernels=32, kernel_dims=(3, 3), stride_dims=(1, 1), data_format='channels_first')
+Layer name: conv2d_2/Identity:0
+INFO:utils.base_utils.log:Layer name: conv2d_2/Identity:0
+Layer config: Layer(name='MaxPool', num_kernels=None, kernel_dims=(2, 2), stride_dims=None, data_format='channels_first')
+INFO:utils.base_utils.log:Layer config: Layer(name='MaxPool', num_kernels=None, kernel_dims=(2, 2), stride_dims=None, data_format='channels_first')
+Layer name: max_pooling2d_1/Identity:0
+INFO:utils.base_utils.log:Layer name: max_pooling2d_1/Identity:0
+Layer config: Layer(name='Conv', num_kernels=64, kernel_dims=(3, 3), stride_dims=(2, 2), data_format='channels_first')
+INFO:utils.base_utils.log:Layer config: Layer(name='Conv', num_kernels=64, kernel_dims=(3, 3), stride_dims=(2, 2), data_format='channels_first')
+Writing tf_model.summary() to file ndl_tf_model_summary.txt
+INFO:utils.base_utils.log:Writing tf_model.summary() to file ndl_tf_model_summary.txt
+Test Mode: Loading the TF trained weights in the model...
+INFO:utils.base_utils.log:Test Mode: Loading the TF trained weights in the model...
+Test Mode: Converting the TF model to spiking Nengo-DL model...
+INFO:utils.base_utils.log:Test Mode: Converting the TF model to spiking Nengo-DL model...
+Connection: <Connection from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>>, | and prior to explicit synapsing: None
+INFO:utils.base_utils.log:Connection: <Connection from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>>, | and prior to explicit synapsing: None
+Connection: <Connection from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>>, | and after explicit synapsing: Lowpass(tau=0.005)
+INFO:utils.base_utils.log:Connection: <Connection from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>>, | and after explicit synapsing: Lowpass(tau=0.005)
+Layer: conv2d_2.0, Nengo Neuron Type: SpikingRectifiedLinear(), Max Firing Rates: Uniform(low=200, high=400)
+INFO:utils.base_utils.log:Layer: conv2d_2.0, Nengo Neuron Type: SpikingRectifiedLinear(), Max Firing Rates: Uniform(low=200, high=400)
+Layer: conv2d_3.0, Nengo Neuron Type: SpikingRectifiedLinear(), Max Firing Rates: Uniform(low=200, high=400)
+INFO:utils.base_utils.log:Layer: conv2d_3.0, Nengo Neuron Type: SpikingRectifiedLinear(), Max Firing Rates: Uniform(low=200, high=400)
+Getting the dataset: mnist
+INFO:utils.base_utils.log:Getting the dataset: mnist
+Replacing each MaxPool TensorNode with a Node carrying out ISI based MaxPooling.
+INFO:utils.base_utils.log:Replacing each MaxPool TensorNode with a Node carrying out ISI based MaxPooling.
+Found connection from prev conv to max pool: <Connection from <Neurons of <Ensemble "conv2d_2.0">> to <TensorNode "max_pooling2d_1">> with transform: NoTransform(size_in=21632), function: None, and synapse: None
+INFO:utils.base_utils.log:Found connection from prev conv to max pool: <Connection from <Neurons of <Ensemble "conv2d_2.0">> to <TensorNode "max_pooling2d_1">> with transform: NoTransform(size_in=21632), function: None, and synapse: None
+Found connection from max pool to next conv: <Connection from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>> with transform: Convolution(n_filters=64, input_shape=(32, 13, 13), strides=(2, 2), channels_last=False), function: None, and synapse: Lowpass(tau=0.005)
+INFO:utils.base_utils.log:Found connection from max pool to next conv: <Connection from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>> with transform: Convolution(n_filters=64, input_shape=(32, 13, 13), strides=(2, 2), channels_last=False), function: None, and synapse: Lowpass(tau=0.005)
+Connections to be replaced: [(<Connection at 0x2b1283cd60d0 from <Neurons of <Ensemble "conv2d_2.0">> to <TensorNode "max_pooling2d_1">>, <Connection at 0x2b1283e8b310 from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>>)]
+INFO:utils.base_utils.log:Connections to be replaced: [(<Connection at 0x2b1283cd60d0 from <Neurons of <Ensemble "conv2d_2.0">> to <TensorNode "max_pooling2d_1">>, <Connection at 0x2b1283e8b310 from <TensorNode "max_pooling2d_1"> to <Neurons of <Ensemble "conv2d_3.0">>>)]
+Replacing to/from connection w.r.t max_pooling2d_1 done.
+INFO:utils.base_utils.log:Replacing to/from connection w.r.t max_pooling2d_1 done.
+All connections made, now checking the new connections (in log)...
+INFO:utils.base_utils.log:All connections made, now checking the new connections (in log)...
+Connection: <Connection from <Node "conv2d_2.0.bias"> to <Node "conv2d_2.0.bias_relay">> | Synapse: None
+INFO:utils.base_utils.log:Connection: <Connection from <Node "conv2d_2.0.bias"> to <Node "conv2d_2.0.bias_relay">> | Synapse: None
+Connection: <Connection from <Node "conv2d_2.0.bias_relay"> to <Neurons of <Ensemble "conv2d_2.0">>> | Synapse: None
+INFO:utils.base_utils.log:Connection: <Connection from <Node "conv2d_2.0.bias_relay"> to <Neurons of <Ensemble "conv2d_2.0">>> | Synapse: None
+Connection: <Connection from <Node "input_2"> to <Neurons of <Ensemble "conv2d_2.0">>> | Synapse: None
+INFO:utils.base_utils.log:Connection: <Connection from <Node "input_2"> to <Neurons of <Ensemble "conv2d_2.0">>> | Synapse: None
+Connection: <Connection from <Node "conv2d_3.0.bias"> to <Node "conv2d_3.0.bias_relay">> | Synapse: None
+INFO:utils.base_utils.log:Connection: <Connection from <Node "conv2d_3.0.bias"> to <Node "conv2d_3.0.bias_relay">> | Synapse: None
+Connection: <Connection from <Node "conv2d_3.0.bias_relay"> to <Neurons of <Ensemble "conv2d_3.0">>> | Synapse: None
+INFO:utils.base_utils.log:Connection: <Connection from <Node "conv2d_3.0.bias_relay"> to <Neurons of <Ensemble "conv2d_3.0">>> | Synapse: None
+Connection: <Connection from <Node "dense_1.0.bias"> to <TensorNode "dense_1.0">> | Synapse: None
+INFO:utils.base_utils.log:Connection: <Connection from <Node "dense_1.0.bias"> to <TensorNode "dense_1.0">> | Synapse: None
+Connection: <Connection from <Neurons of <Ensemble "conv2d_3.0">> to <TensorNode "dense_1.0">> | Synapse: Lowpass(tau=0.005)
+INFO:utils.base_utils.log:Connection: <Connection from <Neurons of <Ensemble "conv2d_3.0">> to <TensorNode "dense_1.0">> | Synapse: Lowpass(tau=0.005)
+Connection: <Connection from <Neurons of <Ensemble "conv2d_2.0">> to <Node (unlabeled) at 0x2b1283e8bfd0>> | Synapse: None
+INFO:utils.base_utils.log:Connection: <Connection from <Neurons of <Ensemble "conv2d_2.0">> to <Node (unlabeled) at 0x2b1283e8bfd0>> | Synapse: None
+Connection: <Connection from <Node (unlabeled) at 0x2b1283e8bfd0> to <Neurons of <Ensemble "conv2d_3.0">>> | Synapse: Lowpass(tau=0.005)
+INFO:utils.base_utils.log:Connection: <Connection from <Node (unlabeled) at 0x2b1283e8bfd0> to <Neurons of <Ensemble "conv2d_3.0">>> | Synapse: Lowpass(tau=0.005)
+Start testing...
+INFO:utils.base_utils.log:Start testing...
+|                     Building network (0%)                    | ETA:  --:--:--
+|                     Building network (0%)                    | ETA:  --:--:--
+|##                    Building network (4%)                     | ETA: 0:00:03
+Build finished in 0:00:00
+|#                         Optimizing graph                           | 0:00:00
+|#             Optimizing graph: operator simplificaton               | 0:00:00
+Optimizing graph: operator simplificaton finished in 0:00:00
+|#                Optimizing graph: merging operators                 | 0:00:00
+Optimizing graph: merging operators finished in 0:00:00
+|#                Optimizing graph: ordering signals                  | 0:00:00
+Optimizing graph: ordering signals finished in 0:00:00
+|#                Optimizing graph: creating signals                  | 0:00:00
+Optimizing graph: creating signals finished in 0:00:00
+Optimization finished in 0:00:00
+|#                        Constructing graph                          | 0:00:00
+| #                       Constructing graph                          | 0:00:00
+|           Constructing graph: pre-build stage (0%)           | ETA:  --:--:--
+Constructing graph: pre-build stage finished in 0:00:00
+|             Constructing graph: build stage (0%)             | ETA:  --:--:--
+|##            Constructing graph: build stage (4%)              | ETA: 0:00:02
+|############# Constructing graph: build stage (21%)             | ETA: 0:00:00
+|##############Constructing graph: build stage (43%)             | ETA: 0:00:00
+|##############Constructing graph: build stage (82%)#            | ETA: 0:00:00
+|############Constructing graph: build stage (100%)############| ETA:  00:00:00
+|############Constructing graph: build stage (100%)############| ETA:  00:00:00
+|     #                   Constructing graph                          | 0:00:00
+Constructing graph: build stage finished in 0:00:00
+Construction finished in 0:00:00
+Nengo-DL model with ISI based max pooling layer compiled.
+INFO:utils.base_utils.log:Nengo-DL model with ISI based max pooling layer compiled.
+Getting Nengo-DL data for dataset: mnist
+INFO:utils.base_utils.log:Getting Nengo-DL data for dataset: mnist
+Getting MNIST dataset...
+INFO:utils.base_utils.log:Getting MNIST dataset...
+mnist data with shape (train_x) : (60000, 1, 28, 28), (test_x): (10000, 1, 28, 28)
+INFO:utils.base_utils.log:mnist data with shape (train_x) : (60000, 1, 28, 28), (test_x): (10000, 1, 28, 28)
+|           Constructing graph: pre-build stage (0%)           | ETA:  --:--:--
+Constructing graph: pre-build stage finished in 0:00:00
+|             Constructing graph: build stage (0%)             | ETA:  --:--:--
+|##            Constructing graph: build stage (4%)              | ETA: 0:00:02
+|##############Constructing graph: build stage (26%)             | ETA: 0:00:00
+|##############Constructing graph: build stage (43%)             | ETA: 0:00:00
+|############Constructing graph: build stage (100%)############| ETA:  00:00:00
+|############Constructing graph: build stage (100%)############| ETA:  00:00:00
+Constructing graph: build stage finished in 0:00:00
+Testing done! Writing the ISI based Max-Pooling test accuracy results in log...
+INFO:utils.base_utils.log:Testing done! Writing the ISI based Max-Pooling test accuracy results in log...
+Nengo DL Test Accuracy: 0.945
+INFO:utils.base_utils.log:Nengo DL Test Accuracy: 0.945
+****************************************************************************************************
+INFO:utils.base_utils.log:****************************************************************************************************
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.iter
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.iter
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_1
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_1
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_2
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_2
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.decay
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.decay
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.learning_rate
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.learning_rate
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.
+WARNING:tensorflow:A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.iter
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.iter
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_1
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_1
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_2
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.beta_2
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.decay
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.decay
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.learning_rate
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer.learning_rate
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'm' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-0.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-1.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.kernel
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:Unresolved object in checkpoint: (root).optimizer's state 'v' for (root).layer_with_weights-2.bias
+WARNING:tensorflow:A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.
+WARNING:tensorflow:A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.

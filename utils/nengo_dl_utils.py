@@ -10,10 +10,12 @@ import tensorflow_probability as tfp
 
 from focal_loss import SparseCategoricalFocalLoss
 
+from configs.exp_configs import nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
 from utils.cnn_2d_utils import get_2d_cnn_model
-from utils.consts.exp_consts import (
-    SEED, NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI, MAX_POOL_MASK, NUM_X)
+from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
+                                     NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
+                                     MAX_POOL_MASK, NUM_X)
 
 def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
                        is_isi_based_max_pool=False, collect_probe_history=True,
@@ -302,29 +304,47 @@ def get_max_pool_global_net(mp_input_size, seed=SEED, max_rate=250, radius=1,
 
   return net
 
-def get_isi_based_maximally_spiking_mask(t, x):
+def get_isi_based_maximally_spiking_mask(t, inp):
   """
   Sets a binary mask of size NUM_X (constituting of all 0s except one 1) which
-  corresponds to the maximally spiking neuron in the group of `x`. The binary
-  mask is set in MAX_POOL_MASK.
+  corresponds to the maximally spiking neuron in the groups of NUM_X in `inp`.
+  The binary mask is set in MAX_POOL_MASK.
 
   Args:
     t <float>: The simulation timestep.
-    x <numpy.array>: The incoming spiking activity of neurons in groups of NUM_X.
-                     i.e. size of the pooling matrix, e.g. [10.0, 0.0, 0.0, 10.0]
-                     where 10.0 is the spiking amplitude if the neuron spiked,
-                     else 0.0.
+    inp <numpy.array>: The incoming spiking activity of neurons of size
+                       `num_chnls` x `rows` x `cols` i.e. size of the output of
+                       the previous Convolutional layer.
+                       e.g. [10.0, 0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 10.0, ..]
+                       where 10.0 is the spiking amplitude if the neuron spiked,
+                       else 0.0.
 
-  Note: When two or more neurons have smallest ISI, we choose the neuron whose
-  index is smallest. This can be suboptimal.
+  Note:
+    * When two or more neurons have smallest ISI, we choose the neuron whose
+    index is smallest. This can be suboptimal.
+    * When this function is executed in a Nengo Node (i.e. passed as a parameter
+    to the `output`) it expects exactly two arguments: time as a float and data
+    as a numpy array. Although you can mention extra fixed keyword arguments in
+    the function, but cannot reinitialize them when passing the function to Node.
   """
+  # Based on the size of the `inp`, the `num_chnls`, `rows`, and `cols` are
+  # determined from the dictionary ISI_BASED_MP_PARAMS.
+  inp_size = np.shape(inp)[0]
+  num_chnls, rows, cols = ISI_BASED_MP_PARAMS[inp_size]
+  inp = inp.reshape(num_chnls, rows, cols)
+  max_pooled_ret = np.zeros((num_chnls, rows//2, cols//2))
+
   def _isi_max_pooling(t, x, chnl, r1, r2, c1, c2):
     int_t = int(t*1000.0)
     # Get the local copies of updated NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
     # and MAX_POOL_MASK for each timestep `t`.
-    neurons_last_spiked_ts = NEURONS_LAST_SPIKED_TS[chnl, r1:r2, c1:c2].flatten()
-    neurons_latest_isi = NEURONS_LATEST_ISI[chnl, r1:r2, c1:c2].flatten()
-    max_pool_mask = MAX_POOL_MASK[chnl, r1:r2, c1:c2].flatten()
+    max_pool_mask = MAX_POOL_MASK[inp_size][chnl, r1:r2, c1:c2].flatten()
+    if int_t >= ndl_cfg["test_mode"]["skip_isi_tstep"]:
+      return np.dot(max_pool_mask, x)
+
+    neurons_last_spiked_ts = (
+        NEURONS_LAST_SPIKED_TS[inp_size][chnl, r1:r2, c1:c2].flatten())
+    neurons_latest_isi = NEURONS_LATEST_ISI[inp_size][chnl, r1:r2, c1:c2].flatten()
     spiked_neurons_mask = np.logical_not(np.isin(x, 0))
 
     # Case 1: None of the neurons in the considered pooling matrix spiked in this
@@ -332,8 +352,7 @@ def get_isi_based_maximally_spiking_mask(t, x):
     # `x` is all 0, hence whatever is the value of MAX_POOL_MASK, the dot product
     # will be 0.
     if np.all(spiked_neurons_mask==False):
-      pass
-      # TODO: Check by setting max_pool_mask = np.zeros((4)).
+      return 0
 
     # One or more of the neurons have spiked in this timestep.
     # Case 2: Check if the currently spiked neurons spiked previously as well?
@@ -355,10 +374,12 @@ def get_isi_based_maximally_spiking_mask(t, x):
       # Update the neurons_last_spiked_ts.
       neurons_last_spiked_ts[spiked_neurons_mask] = int_t
 
-      NEURONS_LAST_SPIKED_TS[chnl, r1:r2, c1:c2] = (
+      NEURONS_LAST_SPIKED_TS[inp_size][chnl, r1:r2, c1:c2] = (
           neurons_last_spiked_ts.reshape(2, 2))
-      NEURONS_LATEST_ISI[chnl, r1:r2, c1:c2] = neurons_latest_isi.reshape(2, 2)
-      MAX_POOL_MASK[chnl, r1:r2, c1:c2] = max_pool_mask.reshape(2, 2)
+      NEURONS_LATEST_ISI[inp_size][chnl, r1:r2, c1:c2] = (
+          neurons_latest_isi.reshape(2, 2))
+      MAX_POOL_MASK[inp_size][chnl, r1:r2, c1:c2] = max_pool_mask.reshape(2, 2)
+      return np.dot(max_pool_mask, x)
 
     # None of the currently spiked neurons spiked previously! i.e. all the
     # currently spiked neurons have spiked for the first time. Two possible
@@ -412,7 +433,18 @@ def get_isi_based_maximally_spiking_mask(t, x):
           # This can be suboptimal.
           max_pool_mask[np.where(neurons_last_spiked_ts)[0][0]] = 1.0
 
-      NEURONS_LAST_SPIKED_TS[chnl, r1:r2, c1:c2] = (
+      NEURONS_LAST_SPIKED_TS[inp_size][chnl, r1:r2, c1:c2] = (
           neurons_last_spiked_ts.reshape(2, 2))
-      NEURONS_LATEST_ISI[chnl, r1:r2, c1:c2] = neurons_latest_isi.reshape(2, 2)
-      MAX_POOL_MASK[chnl, r1:r2, c1:c2] = max_pool_mask.reshape(2, 2)
+      NEURONS_LATEST_ISI[inp_size][chnl, r1:r2, c1:c2] = (
+          neurons_latest_isi.reshape(2, 2))
+      MAX_POOL_MASK[inp_size][chnl, r1:r2, c1:c2] = max_pool_mask.reshape(2, 2)
+      return np.dot(max_pool_mask, x)
+
+  for chnl in range(num_chnls):
+    for r in range(rows//2):
+      for c in range(cols//2):
+        max_pooled_ret[chnl, r, c] = _isi_max_pooling(
+            t, inp[chnl, r*2:r*2+2, c*2:c*2+2].flatten(), chnl, r*2, r*2+2, c*2,
+            c*2+2)
+
+  return max_pooled_ret.flatten()

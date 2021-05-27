@@ -18,7 +18,7 @@ from utils.consts.model_consts import MODEL_1, MODEL_2, MODEL_3
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_3
+model = MODEL_2
 dataset = MNIST # One of MNIST, CIFAR10
 
 tf_exp_cfg = {
@@ -47,6 +47,9 @@ nengo_dl_cfg = {
     "ndl_test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/tf_otpts/ndl_test_only_results/"
         % (dataset, model["name"])),
+    # Timestep after which MAX_POOL_MASK will not be updated, rather the learned
+    # mask up till this timestep will determine the maximally firing neuron.
+    "skip_isi_tstep": 60,
   },
   "train_mode": {
     "neuron": nengo.RectifiedLinear(),

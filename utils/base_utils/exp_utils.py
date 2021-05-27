@@ -13,7 +13,9 @@ import _init_paths
 
 from configs.exp_configs import tf_exp_cfg as exp_cfg, nengo_dl_cfg as ngo_cfg
 from utils.consts.dir_consts import EXP_OTPT_DIR
-from utils.consts.exp_consts import SEED
+from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED, NUM_X,
+                                     NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
+                                     MAX_POOL_MASK)
 from utils.nengo_dl_utils import get_nengo_dl_model
 
 def collect_sim_data_spikes(probes_lst, sim_data):
@@ -371,3 +373,19 @@ def get_grouped_slices_2d_pooling(**kwargs):
   #  return grouped_slices[: num_chnls*(rows-1)*(cols-1)]
 
   return grouped_slices
+
+def get_isi_based_max_pooling_params(layers):
+  """
+  Populates ISI based MaxPooling experiemt parameters. That is: `MAX_POOL_MASK`,
+  `NEURONS_LAST_SPIKED_TS`, `NEURONS_LATEST_ISI`, `ISI_BASED_MP_PARAMS` dicts.
+
+  Args:
+    layers <list>: Model's layers' parameters.
+  """
+  for layer in layers:
+    if layer.name.startswith("conv2d"):
+      lyr_otp, size = layer.output.shape[1:], np.prod(layer.output.shape[1:])
+      ISI_BASED_MP_PARAMS[size] = np.array(lyr_otp)
+      NEURONS_LAST_SPIKED_TS[size] = np.zeros(lyr_otp)
+      NEURONS_LATEST_ISI[size] = np.ones(lyr_otp)*np.inf
+      MAX_POOL_MASK[size] = np.ones(lyr_otp)/NUM_X
