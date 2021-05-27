@@ -17,10 +17,12 @@ from configs.exp_configs import (
     nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg, asctv_max_cfg as am_cfg)
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_batches_of_exp_dataset
-from utils.base_utils.exp_utils import get_grouped_slices_2d_pooling
+from utils.base_utils.exp_utils import (get_grouped_slices_2d_pooling,
+                                        get_isi_based_max_pooling_params)
 from utils.cnn_2d_utils import get_2d_cnn_model
 from utils.consts.exp_consts import SEED, MNIST, CIFAR10
-from utils.nengo_dl_utils import get_nengo_dl_model, get_max_pool_global_net
+from utils.nengo_dl_utils import (get_nengo_dl_model, get_max_pool_global_net,
+                                  get_isi_based_maximally_spiking_mask)
 
 # Set the SEED.
 random.seed(SEED)
@@ -197,9 +199,96 @@ def _do_isi_based_max_pooling(inpt_shape, num_clss):
   log.INFO("Getting the Nengo-DL model with loaded TF trained weights...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False)
+      is_isi_based_max_pool=True, max_to_avg_pool=False)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(ndl_cfg, is_test=True)
+
+  # Populate ISI based MaxPooling Parameters.
+  get_isi_based_max_pooling_params(ndl_model.model.layers)
+
+  # Replace the MaxPool TensorNode with the ISI based MaxPooling Node.
+  log.INFO("Replacing all the MaxPooling TensorNodes with custom Node for doing "
+           "ISI based MaxPooling. Getting the respective connections...")
+  ################# GET THE CONNECTIONS TO REPLACE ####################
+  all_mp_tn_conns = [] # Stores all the to/from MaxPool TensorNode connections.
+  for i, conn in enumerate(ndl_model.net.all_connections):
+    if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
+        conn.post_obj.label.startswith("max_pooling")):
+      # Connection from previous Conv to current Max TensorNode.
+      conn_from_pconv_to_max = ndl_model.net.all_connections[i]
+      # Connection from current Max TensorNode to next Conv.
+      conn_from_max_to_nconv = ndl_model.net.all_connections[i+3]
+      log.INFO("Found connection from prev conv to max pool: {} with transform: "
+               "{}, function: {}, and synapse: {}".format(conn_from_pconv_to_max,
+               conn_from_pconv_to_max.transform, conn_from_pconv_to_max.function,
+               conn_from_pconv_to_max.synapse))
+      log.INFO("Found connection from max pool to next conv: {} with transform: "
+               "{}, function: {}, and synapse: {}".format(conn_from_max_to_nconv,
+               conn_from_max_to_nconv.transform, conn_from_max_to_nconv.function,
+               conn_from_max_to_nconv.synapse))
+      all_mp_tn_conns.append(
+          (conn_from_pconv_to_max, conn_from_max_to_nconv))
+
+  log.INFO("Connections to be replaced: {}".format(all_mp_tn_conns))
+
+  ##################### REPLACE THE CONNECTIONS #######################
+  with ndl_model.net:
+    for conn_tpl in all_mp_tn_conns:
+      conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
+      isi_max_node = nengo.Node(
+          output=get_isi_based_maximally_spiking_mask,
+          size_in=conn_from_pconv_to_max.post_obj.size_in)
+
+      ######### CONNECT THE PREV ENS/CONV TO ASSOCIATIVE-MAX MAXPOOL ########
+      nengo.Connection(
+          conn_from_pconv_to_max.pre_obj,
+          isi_max_node,
+          transform=conn_from_pconv_to_max.transform,
+          synapse=conn_from_pconv_to_max.synapse,
+          function=conn_from_pconv_to_max.function
+      )
+
+      ######### CONNECT THE ASSOCIATIVE-MAX MAXPOOL TO NEXT ENS/CONV ########
+      nengo.Connection(
+          isi_max_node,
+          conn_from_max_to_nconv.post_obj,
+          transform=conn_from_max_to_nconv.transform,
+          synapse=conn_from_max_to_nconv.synapse,
+          function=conn_from_max_to_nconv.function
+      )
+      log.INFO("Replacement of to/from connection w.r.t. %s done."
+               % conn_from_pconv_to_max.post_obj.label)
+
+  ########### REMOVE THE OLD CONNECTIONS AND TENSOR-NODES ###############
+  with ndl_model.net:
+    for conn_tpl in all_mp_tn_conns:
+      conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
+      ndl_model.net._connections.remove(conn_from_pconv_to_max)
+      ndl_model.net._connections.remove(conn_from_max_to_nconv)
+      ndl_model.net._nodes.remove(conn_from_pconv_to_max.post_obj)
+
+  log.INFO("All connections made, now checking the new connections (in log)...")
+  for conn in ndl_model.net._connections:
+    log.INFO("Connection: {} | Synapse: {}".format(conn, conn.synapse))
+
+  log.INFO("Start testing...")
+  with nengo_dl.Simulator(
+      ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"]
+      ) as sim:
+    acc, n_test_imgs = 0, 0
+    for batch in test_batches:
+      sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
+      for true_lbl, pred_lbl in zip(batch[1], sim_data[ngo_probes_lst[-1]]):
+        if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
+          acc += 1
+        n_test_imgs += 1
+      if n_test_imgs == 200:
+        break
+  log.INFO("Testing done! Writing the ISI based MaxPooling test accuracy results "
+           "in log...")
+  log.INFO("Nengo DL Test Accuracy: %s" % (acc/n_test_imgs))
+  # TODO: Delete the `ndl_model` to reclaim GPU memory.
+  log.INFO("*"*100)
 
 def nengo_dl_test():
   """
@@ -226,6 +315,7 @@ def nengo_dl_test():
   log.INFO("Testing in TensorNode MaxPooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False)
 
+  """
   log.INFO("Testing in Max To Avg Pooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
@@ -234,6 +324,10 @@ def nengo_dl_test():
 
   log.INFO("Testing in custom associative avg mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=False)
+  """
+
+  log.INFO("Testing in ISI based MaxPooling mode...")
+  _do_isi_based_max_pooling(inpt_shape, num_clss)
 
 if __name__ == "__main__":
   log.configure_log_handler(
