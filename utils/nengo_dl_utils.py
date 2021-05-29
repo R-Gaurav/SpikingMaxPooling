@@ -330,6 +330,17 @@ def get_isi_based_maximally_spiking_mask(t, inp):
   # Based on the size of the `inp`, the `num_chnls`, `rows`, and `cols` are
   # determined from the dictionary ISI_BASED_MP_PARAMS.
   inp_size = np.shape(inp)[0]
+  log.INFO("ISI Params for Input Size: %s" % inp_size)
+  log.INFO("ISI_BASED_MP_PARAMS: {}".format(ISI_BASED_MP_PARAMS[inp_size]))
+  log.INFO("NEURONS_LAST_SPIKED_TS: {}, value: {}".format(
+           NEURONS_LAST_SPIKED_TS[inp_size].shape,
+           NEURONS_LAST_SPIKED_TS[inp_size][0, 0, 0]))
+  log.INFO("NEURONS_LATEST_ISI: {}, value: {}".format(
+           NEURONS_LATEST_ISI[inp_size].shape,
+           NEURONS_LATEST_ISI[inp_size][0, 0, 0]))
+  log.INFO("MAX_POOL_MASK: {}, value: {}".format(
+           MAX_POOL_MASK[inp_size].shape, MAX_POOL_MASK[inp_size][0, 0, 0]))
+
   num_chnls, rows, cols = ISI_BASED_MP_PARAMS[inp_size]
   inp = inp.reshape(num_chnls, rows, cols)
   max_pooled_ret = np.zeros((num_chnls, rows//2, cols//2))
@@ -351,7 +362,7 @@ def get_isi_based_maximally_spiking_mask(t, inp):
     # timestep, therefore leave the MACROS unchanged. Since none spiked, the
     # `x` is all 0, hence whatever is the value of MAX_POOL_MASK, the dot product
     # will be 0.
-    if np.all(spiked_neurons_mask==False):
+    if np.all(spiked_neurons_mask == False):
       return 0
 
     # One or more of the neurons have spiked in this timestep.

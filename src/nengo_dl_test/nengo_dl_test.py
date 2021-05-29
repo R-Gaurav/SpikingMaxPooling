@@ -235,6 +235,9 @@ def _do_isi_based_max_pooling(inpt_shape, num_clss):
   with ndl_model.net:
     for conn_tpl in all_mp_tn_conns:
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
+      log.INFO("RG: Size In: %s of the Max TN: %s" % (
+                conn_from_pconv_to_max.post_obj.size_in,
+                conn_from_pconv_to_max.post_obj.label))
       isi_max_node = nengo.Node(
           output=get_isi_based_maximally_spiking_mask,
           size_in=conn_from_pconv_to_max.post_obj.size_in)

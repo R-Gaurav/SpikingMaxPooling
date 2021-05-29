@@ -18,7 +18,7 @@ from utils.consts.model_consts import MODEL_1, MODEL_2, MODEL_3
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_2
+model = MODEL_3
 dataset = MNIST # One of MNIST, CIFAR10
 
 tf_exp_cfg = {

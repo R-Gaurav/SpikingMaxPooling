@@ -96,7 +96,7 @@ def get_2d_cnn_model(inpt_shape, exp_cfg, num_clss=10):
   #x = tf.keras.layers.Flatten(data_format=layer.data_format)(x)
   x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
-  # x = _get_dense_block(x, exp_cfg["nn_dlyr"], layer_objs_lst)
+  x = _get_dense_block(x, exp_cfg["nn_dlyr"], layer_objs_lst)
   # Add the final output Dense block.
   output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
 
