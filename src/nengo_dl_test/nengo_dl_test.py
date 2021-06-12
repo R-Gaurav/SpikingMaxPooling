@@ -13,6 +13,8 @@ import random
 
 import _init_paths
 
+from nengo_dl.graph_optimizer import noop_planner
+
 from configs.exp_configs import (
     nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg, asctv_max_cfg as am_cfg)
 from utils.base_utils import log
@@ -116,6 +118,9 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
 
   ##################### REPLACE THE CONNECTIONS #######################
   with ndl_model.net:
+    # Disable operator merging to improve compilation time.
+    nengo_dl.configure_settings(planner=noop_planner)
+
     for conn_tpl in all_mp_tn_conns:
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
       ########## GET THE CONV LAYER GROUPED SLICES FOR MAX POOLING ###########
@@ -318,19 +323,19 @@ def nengo_dl_test():
   log.INFO("Testing in TensorNode MaxPooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False)
 
-  """
   log.INFO("Testing in Max To Avg Pooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   log.INFO("Testing in custom associative max mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
+  """
   log.INFO("Testing in custom associative avg mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=False)
-  """
 
   log.INFO("Testing in ISI based MaxPooling mode...")
   _do_isi_based_max_pooling(inpt_shape, num_clss)
+  """
 
 if __name__ == "__main__":
   log.configure_log_handler(
