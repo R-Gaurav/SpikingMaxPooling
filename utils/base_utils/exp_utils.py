@@ -11,12 +11,12 @@ import pickle
 
 import _init_paths
 
-from configs.exp_configs import tf_exp_cfg as exp_cfg, nengo_dl_cfg as ngo_cfg
+#from configs.exp_configs import tf_exp_cfg as exp_cfg, nengo_dl_cfg as ngo_cfg
 from utils.consts.dir_consts import EXP_OTPT_DIR
 from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED, NUM_X,
                                      NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
                                      MAX_POOL_MASK)
-from utils.nengo_dl_utils import get_nengo_dl_model
+#from utils.nengo_dl_utils import get_nengo_dl_model
 
 def collect_sim_data_spikes(probes_lst, sim_data):
   """

@@ -10,7 +10,7 @@ import tensorflow_probability as tfp
 
 from focal_loss import SparseCategoricalFocalLoss
 
-from configs.exp_configs import nengo_dl_cfg as ndl_cfg
+#from configs.exp_configs import nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
 from utils.base_utils.exp_utils import get_grouped_slices_2d_pooling
 from utils.cnn_2d_utils import get_2d_cnn_model
