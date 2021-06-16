@@ -61,7 +61,11 @@ flatten = tf.keras.layers.Flatten(name="flatten")(conv1)
 dense0 = tf.keras.layers.Dense(64, activation=tf.nn.relu, name="dense0")(flatten)
 
 ############################ OFF-CHIP OUTPUT LAYER #########################
-#dense1 = tf.keras.layers.Dense(10, activation="softmax", name="dense1")(dense0)
+# `Dense` layer with "softmax" results in following error:
+# `nengo.exceptions.SimulationError: Cannot call TensorNode output function
+# (this probably means you are trying to use a TensorNode inside a Simulator other
+# than NengoDL)`. Therefore comment out the line.
+# dense1 = tf.keras.layers.Dense(10, activation="softmax", name="dense1")(dense0)
 dense1 = tf.keras.layers.Dense(10, name="dense1")(dense0)
 model = tf.keras.Model(inputs=inp, outputs=dense1)
 model.summary()
@@ -209,8 +213,8 @@ for node in net._nodes:
 
 #with nengo_loihi.Simulator(net, target="loihi", remove_passthrough=False) as loihi_sim:
 with nengo_loihi.Simulator(net, target="loihi") as loihi_sim:
-    #configure_ensemble_for_2x2_max_join_op(
-    #    loihi_sim, ens, pool_size=(2, 2), num_chnls=NUM_CHNLS, rows=ROWS, cols=COLS)
+    configure_ensemble_for_2x2_max_join_op(
+        loihi_sim, ens, pool_size=(2, 2), num_chnls=NUM_CHNLS, rows=ROWS, cols=COLS)
     loihi_sim.run(n_test * pres_time)
 
     # get output (last timestep of each presentation period)
