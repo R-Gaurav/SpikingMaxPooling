@@ -10,14 +10,14 @@ import tensorflow_probability as tfp
 
 from focal_loss import SparseCategoricalFocalLoss
 
-#from configs.exp_configs import nengo_dl_cfg as ndl_cfg
+from configs.exp_configs import nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
 from utils.cnn_2d_utils import get_2d_cnn_model
 from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
                                      NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
                                      MAX_POOL_MASK, NUM_X)
 
-def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
+def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
                        is_isi_based_max_pool=False, collect_probe_history=True,
                        max_to_avg_pool=False, include_non_max_pool_probes=True):
   """
@@ -26,7 +26,7 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
   Args:
     inpt_shape <()>: A tuple of input shape of 2D CNNs in channels_first order.
     tf_cfg <{}>: The experimental configuration.
-    ndl_cfg <{}>: Nengo-DL model related configuration.
+    ngo_cfg <{}>: Nengo-DL/NengoLoihi model related configuration.
     model <str>: One of "test" or "train".
     num_clss <int>: Number of classes.
     collect_probe_history <bool>: Collect probes entire `n_steps` simulation time
@@ -39,21 +39,21 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
     nengo.Model, [Probes]
   """
   log.INFO("TF Config: {}".format(tf_cfg))
-  log.INFO("Nengo-DL Config: {}".format(ndl_cfg))
+  log.INFO("Nengo-DL Config: {}".format(ngo_cfg))
   log.INFO("Number of classes: {}".format(num_clss))
   log.INFO("Nengo DL Mode: {}".format(mode))
 
   # Creating the model.
   model, layer_objs_lst = get_2d_cnn_model(inpt_shape, tf_cfg, num_clss)
   log.INFO("Writing tf_model.summary() to file ndl_tf_model_summary.txt")
-  with open(ndl_cfg["test_mode"]["ndl_test_mode_res_otpt_dir"]+
-            "/ndl_tf_model_summary.txt", "w") as f:
+  with open(ngo_cfg["test_mode"]["test_mode_res_otpt_dir"]+
+            "/nengo_tf_model_summary.txt", "w") as f:
     model.summary(print_fn=lambda x: f.write(x + "\n"))
 
   if mode=="test":
-    test_cfg = ndl_cfg["test_mode"]
-    log.INFO("Test Mode: Loading the TF trained weights in the model...")
-    model.load_weights(ndl_cfg["tf_wts_inpt_dir"])
+    test_cfg = ngo_cfg["test_mode"]
+    #log.INFO("Test Mode: Loading the TF trained weights in the model...")
+    #model.load_weights(ngo_cfg["tf_wts_inpt_dir"])
     log.INFO("Test Mode: Converting the TF model to spiking Nengo-DL model...")
     np.random.seed(SEED)
     ndl_model = nengo_dl.Converter(
@@ -61,46 +61,46 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
         swap_activations={tf.keras.activations.relu: test_cfg["spk_neuron"]},
         scale_firing_rates=test_cfg["sfr"],
         synapse=test_cfg["synapse"],
-        inference_only=True,
+        #inference_only=True,
         max_to_avg_pool=max_to_avg_pool
     )
     # If `is_isi_based_max_pool` is set to True, then do NOT synapse the
     # connections to MaxPooling layers so as to receive the spikes and not the
     # synpased values. If not set to True, then synapse the connections to
     # MaxPooling layers.
-    if not is_isi_based_max_pool:
-      # Explicitly set the connection synapse from Conv to MaxPooling layers.
-      for i, conn in enumerate(ndl_model.net.all_connections):
-        if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
-          if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
-              conn.post_obj.label.startswith("max_pooling")):
-            log.INFO(
-                "Connection: {}, | and prior to explicit synapsing: {}".format(
-                conn, conn.synapse))
-            ndl_model.net._connections[i].synapse = nengo.Lowpass(
-                test_cfg["synapse"])
-            log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
-                conn, conn.synapse))
+    #if not is_isi_based_max_pool:
+    #  # Explicitly set the connection synapse from Conv to MaxPooling layers.
+    #  for i, conn in enumerate(ndl_model.net.all_connections):
+    #    if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
+    #      if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
+    #          conn.post_obj.label.startswith("max_pooling")):
+    #        log.INFO(
+    #            "Connection: {}, | and prior to explicit synapsing: {}".format(
+    #            conn, conn.synapse))
+    #        ndl_model.net._connections[i].synapse = nengo.Lowpass(
+    #            test_cfg["synapse"])
+    #        log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
+    #            conn, conn.synapse))
 
     # If `is_isi_based_max_pool` is set to True then since the incoming spikes
     # to the MaxPooling layers were not synpased, we need to synapse the selected
     # outgoing spikes from the MaxPooling layer to the next Conv layer.
-    if is_isi_based_max_pool:
-      # Explicitly set the connection synapse from MaxPooling layers to Conv.
-      for i, conn in enumerate(ndl_model.net.all_connections):
-        if (isinstance(conn.pre_obj, nengo_dl.tensor_node.TensorNode) and
-            conn.pre_obj.label.startswith("max_pooling")):
-          if isinstance(conn.post_obj, nengo.ensemble.Neurons):
-            log.INFO(
-                "Connection: {}, | and prior to explicit synapsing: {}".format(
-                conn, conn.synapse))
-            ndl_model.net._connections[i].synapse = nengo.Lowpass(
-                test_cfg["synapse"])
-            log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
-                conn, conn.synapse))
+    #if is_isi_based_max_pool:
+    #  # Explicitly set the connection synapse from MaxPooling layers to Conv.
+    #  for i, conn in enumerate(ndl_model.net.all_connections):
+    #    if (isinstance(conn.pre_obj, nengo_dl.tensor_node.TensorNode) and
+    #        conn.pre_obj.label.startswith("max_pooling")):
+    #      if isinstance(conn.post_obj, nengo.ensemble.Neurons):
+    #        log.INFO(
+    #            "Connection: {}, | and prior to explicit synapsing: {}".format(
+    #            conn, conn.synapse))
+    #        ndl_model.net._connections[i].synapse = nengo.Lowpass(
+    #            test_cfg["synapse"])
+    #        log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
+    #            conn, conn.synapse))
 
   else:
-    train_cfg = ndl_cfg["train_mode"]
+    train_cfg = ngo_cfg["train_mode"]
     log.INFO("Train Mode: Converting the obtained TF model to Nengo-DL model..")
     np.random.seed(SEED)
     ndl_model = nengo_dl.Converter(

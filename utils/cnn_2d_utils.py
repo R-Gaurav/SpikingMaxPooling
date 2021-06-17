@@ -20,10 +20,12 @@ def _get_2d_cnn_block(block, layer_cfg, layer_objs_lst):
   """
   log.INFO("Layer name: {}".format(block.name))
   log.INFO("Layer config: {}".format(layer_cfg))
+  # `use_bias=True` cannot be set since nengo-loihi does not yet support 'Sparse'
+  # transforms on host to chip connections
   conv = tf.keras.layers.Conv2D(
     layer_cfg.num_kernels, layer_cfg.kernel_dims, strides=layer_cfg.stride_dims,
     padding="valid", data_format=layer_cfg.data_format, activation="relu",
-    kernel_initializer="he_uniform")(block)
+    kernel_initializer="he_uniform", use_bias=False)(block)
   layer_objs_lst.append(conv)
 
   return conv
@@ -59,8 +61,10 @@ def _get_dense_block(block, nn_dlyr, layer_objs_lst, actvn="relu"):
   Returns:
     tf.Tensor.
   """
+  # `use_bias=True` can be set for chip to host connections.
   dense = tf.keras.layers.Dense(
-      nn_dlyr, activation=actvn, kernel_initializer="he_uniform",)(block)
+      nn_dlyr,
+      activation=actvn, kernel_initializer="he_uniform", use_bias=True)(block)
   layer_objs_lst.append(dense)
 
   return dense
@@ -98,7 +102,10 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
   # Add one Dense block.
   x = _get_dense_block(x, tf_cfg["nn_dlyr"], layer_objs_lst)
   # Add the final output Dense block.
-  output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
+  # output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
+  # Presence of "softmax" activation results in formation of `TensorNode` and
+  # the Converted model fails to run in NengoLoihi Simulator.
+  output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn=None)
 
   model = tf.keras.Model(inputs=inpt_lyr, outputs=output_lyr)
   return model, layer_objs_lst

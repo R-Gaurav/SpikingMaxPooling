@@ -302,10 +302,6 @@ def nengo_dl_test():
   Loads a TF model weights and tests it in Nengo-DL. It first executes the
   MaxPooling op with TensorNode, then executes the `max_to_avg_pool` op, followed
   by the Associative-Max op.
-
-  Args:
-    tf_cfg <dict>: The TF experiment related config.
-    ndl_cfg <dict>: The Nengo-DL experiment related config.
   """
   log.INFO("TF CONFIG: %s" % tf_cfg)
   log.INFO("NENGO DL CONFIG: %s" % ndl_cfg)

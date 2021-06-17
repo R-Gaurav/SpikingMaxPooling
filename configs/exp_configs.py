@@ -3,6 +3,7 @@
 #
 
 import nengo
+import nengo_loihi
 import pathlib
 
 from utils.consts.dir_consts import EXP_OTPT_DIR
@@ -18,7 +19,7 @@ from utils.consts.model_consts import MODEL_1, MODEL_2, MODEL_3
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_3
+model = MODEL_1
 dataset = MNIST # One of MNIST, CIFAR10
 
 tf_exp_cfg = {
@@ -34,17 +35,25 @@ tf_exp_cfg = {
 }
 
 nengo_loihi_cfg = {
+  "dataset": dataset,
   "trained_model_params": (
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
-  "presentation_time": 0.04, # in seconds, 0.04 => 40 ms.
-  "n_test": 200 # Number of images to be tested.
-  "scale": 1.1 # Scaling parameter of the output of root neurons.
+  "test_mode": {
+    "n_steps": 40, # in milliseconds.
+    "n_test": 100, # Number of images to be tested.
+    "scale": 1.1, # Scaling parameter of the output of root neurons.
+    "sfr": 400,
+    "synapse": 0.005,
+    "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
+    "test_mode_res_otpt_dir": (
+        EXP_OTPT_DIR + "/%s/%s/nengo_loihi_otpts/" % (dataset, model["name"]))
+  },
   "layer_blockshapes": {
-    "model_2": {
+    "model_1": {
       "conv2d_0": (1, 26, 26),
       "conv2d_1": (8, 11, 11),
     }
-  }
+  },
 }
 
 nengo_dl_cfg = {
@@ -58,7 +67,7 @@ nengo_dl_cfg = {
     "sfr": 25,
     "n_steps": 60,
     "test_batch_size": 100,
-    "ndl_test_mode_res_otpt_dir": (
+    "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/tf_otpts/ndl_test_only_results/"
         % (dataset, model["name"])),
     # Timestep after which MAX_POOL_MASK will not be updated, rather the learned
@@ -85,7 +94,9 @@ asctv_max_cfg = {
 
 pathlib.Path(tf_exp_cfg["tf_wts_otpt_dir"]).mkdir(parents=True, exist_ok=True)
 pathlib.Path(tf_exp_cfg["tf_res_otpt_dir"]).mkdir(parents=True, exist_ok=True)
-pathlib.Path(nengo_dl_cfg["test_mode"]["ndl_test_mode_res_otpt_dir"]).mkdir(
+pathlib.Path(nengo_dl_cfg["test_mode"]["test_mode_res_otpt_dir"]).mkdir(
              parents=True, exist_ok=True)
 pathlib.Path(nengo_dl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"]).mkdir(
              parents=True, exist_ok=True)
+pathlib.Path(nengo_loihi_cfg["test_mode"]["test_mode_res_otpt_dir"]).mkdir(
+    parents=True, exist_ok=True)

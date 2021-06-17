@@ -1,4 +1,12 @@
+#
+# Test a NengoLoihi model on Loihi Board.
+#
+# Author: Ramashish Gaurav
+#
+
+import datetime
 import nengo
+import nengo_dl
 import nengo_loihi
 import numpy as np
 import random
@@ -6,11 +14,11 @@ import warnings
 
 import _init_paths
 
-from configs.exp_configs import nengo_loihi_cfg as nloihi_cfg
+from configs.exp_configs import tf_exp_cfg as tf_cfg, nengo_loihi_cfg as nloihi_cfg
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_exp_dataset
 from utils.base_utils.exp_utils import get_grouped_slices_2d_pooling
-from utils.consts.exp_consts import SEED
+from utils.consts.exp_consts import SEED, MNIST, CIFAR10
 from utils.nengo_dl_utils import get_nengo_dl_model
 from utils.nengo_loihi_utils import configure_ensemble_for_2x2_max_join_op
 
@@ -21,21 +29,23 @@ warnings.filterwarnings("ignore", message="No GPU", module="nengo_dl")
 random.seed(SEED)
 np.random.seed(SEED)
 
-#TODO:
-# Fix the get NengoDL model function, modify get 2D CNN model to train without softmax and with to_spikes layer.
-# Also set use_bias=False.
-
 def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
   """
+  Doest NengoLoihi test of models with MaxPooling implemented by MAX joinOp method.
+
+  Args:
+    inpt_shape <(int, int, int)>: A tuple of Image shape with channels_first order.
+    num_clss <int>: Number of test classes.
   """
   log.INFO("Getting the NengoDL model...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
-      inpt_shape, tf_cfg, ndl_cfg, model="test", num_clss=num_clss,
+      inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=False, include_non_max_pool_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(nloihi_cfg["dataset"])
   # Flatten `test_x`: (10000, 1, 784) for MNIST.
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
+  pres_time = nloihi_cfg["test_mode"]["n_steps"] * 0.001 # Convert to ms.
 
   log.INFO("Loading the trained Params: %s" % nloihi_cfg["trained_model_params"])
   nengo_input, nengo_output = ngo_probes_lst[0], ngo_probes_lst[-1]
@@ -52,7 +62,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
     ndl_model.net.config[
         ndl_model.layers[ndl_model.model.layers[1]].ensemble].on_chip = False
     nengo_input.output = nengo.processes.PresentInput(
-        test_x, presentation_time=nloihi_cfg["presentation_time"])
+        test_x, presentation_time=pres_time)
 
   # Get the To/Fro connections to the MaxPool TensorNodes to be replaced.
   log.INFO("Getting all the To/Fro connections with MaxPool TensorNodes")
@@ -80,6 +90,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
         return layer.output.shape[1:] # (num_chnls, rows, cols)
 
   ################# REPLACE THE CONNECTIONS ##########################
+  # List to store Ensembles doing MAX joinOp to be configured later in the
+  # NengoLoihi Simulator.
+  max_join_op_ens_list = []
   with ndl_model.net:
     for conn_tpl in all_mp_tn_conns:
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
@@ -96,11 +109,13 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
         n_neurons = num_neurons, dimensions=1, gain=1000*np.ones(num_neurons),
         bias=np.zeros(num_neurons), seed=SEED,
         neuron_type=nengo_loihi.neurons.LoihiSpikingRectifiedLinear(
-          amplitude=nloihi_cfg["scale"]/1000,
+          amplitude=nloihi_cfg["test_mode"]["scale"]/1000,
           initial_state={"voltage": np.zeros(num_neurons)}
         )
+      )
+      max_join_op_ens_list.append(max_join_op_ens)
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
-      ndl_model.net[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
+      ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
           (1, rows, cols), (num_chnls, rows, cols))
 
       ######### CONNECT THE PREV ENS/CONV TO MAX_JOINOP_ENSEMBLE #########
@@ -119,11 +134,12 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
           max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
           conn_from_max_to_nconv.post_obj,
           transform=conn_from_max_to_nconv.transform,
-          synapse=0.005, # Synapse required because the input to Conv is spikes.
+          # Synapse required because input to Conv from MAX JoinOp Ens is spikes.
+          synapse=nloihi_cfg["test_mode"]["synapse"],
           function=conn_from_max_to_nconv.function
       )
 
-      log.INFO("To/From connection w.r.t. % done!"
+      log.INFO("To/From connection w.r.t. %s done!"
                % conn_from_pconv_to_max.post_obj.label)
 
   ############# REMOVE THE OLD CONNECTIONS #########################
@@ -136,7 +152,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
 
   log.INFO("All connections made. Now checking the new connections (in log)...")
   for conn in ndl_model.net._connections:
-    log.INFO("Connection: {} | Synapse: {}".format(conn, conn.synapse)
+    log.INFO("Connection: {} | Synapse: {}".format(conn, conn.synapse))
 
   ############### SET THE BLOCK SHAPES ON LOIHI NEUROCORES #####################
   # Only the intermediate Conv layers and Dense layers run on Loihi, the Input
@@ -155,14 +171,44 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       # with number of neurons less than 1024, so no need to partition them.
 
   with nengo_loihi.Simulator(ndl_model.net, target="loihi") as loihi_sim:
-    configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens) # TODO: More than 1 max_join_op_ens?
-    loihi_sim.run(nloihi_cfg["n_test"] * nloihi_cfg["presentation_time"])
+    #for max_join_op_ens in max_join_op_ens_list:
+    #  configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens)
+    loihi_sim.run(nloihi_cfg["test_mode"]["n_test"] * pres_time)
 
   # Get the output (last timestep of each presentation period)
-  pres_steps = int(round(nloihi_cfg["presentation_time"] / loihi_sim.dt))
+  pres_steps = int(round(pres_time / loihi_sim.dt))
   output = loihi_sim.data[nengo_output][pres_steps-1 :: pres_steps]
   loihi_predictions = np.argmax(output, axis=-1)
   correct = 100 * np.mean(
-      loihi_predictions == np.argmax(test_y[:nloihi_cfg["n_test"]], axis=-1))
+      loihi_predictions == np.argmax(
+      test_y[:nloihi_cfg["test_mode"]["n_test"]], axis=-1))
   log.INFO("Loihi Accuracy with Model: %s is: %s"
            % (tf_cfg["tf_model"]["name"], correct))
+  log.INFO("*"*100)
+
+def nengo_loihi_test():
+  """
+  Does a variety of NengoLoihi test of TF models. Runs the model on Loihi Boards.
+  """
+  log.INFO("TF CONFIG: %s" % tf_cfg)
+  log.INFO("NENGO-LOIHI CONFIG: %s" % nloihi_cfg)
+  assert nloihi_cfg["dataset"] == tf_cfg["dataset"]
+
+  ###############################################################################
+  if nloihi_cfg["dataset"] == MNIST:
+    inpt_shape = (1, 28, 28)
+    num_clss = 10
+  ###############################################################################
+
+  log.INFO("*"*100)
+  log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
+  _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss)
+
+if __name__ == "__main__":
+  print("*"*100)
+  log.configure_log_handler(
+    "%s_sfr_%s_n_steps_%s_synapse_%s_timestamp_%s.log" % (
+    nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] + "_nengo_loihi_test_",
+    nloihi_cfg["test_mode"]["sfr"], nloihi_cfg["test_mode"]["n_steps"],
+    nloihi_cfg["test_mode"]["synapse"], datetime.datetime.now()))
+  nengo_loihi_test()

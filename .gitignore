@@ -3,4 +3,5 @@ src/*/*/*.pyc
 utils/*/*/*.pyc
 
 runtime_outputs/*
-
+.nfs*
+nohop.out
