@@ -25,15 +25,15 @@ def get_exp_dataset(dataset, channels_first=True):
   if dataset == CIFAR10:
     log.INFO("Getting CIFAR10 datasset...")
     (train_x, train_y), (test_x, test_y) = tf.keras.datasets.cifar10.load_data()
+    # Normalize the images in range [-1, 1]
+    #train_x = train_x.astype(np.float32) / 127.5 - 1
+    #test_x = test_x.astype(np.float32) / 127.5 - 1
   elif dataset == MNIST:
     log.INFO("Getting MNIST dataset...")
     (train_x, train_y), (test_x, test_y) = tf.keras.datasets.mnist.load_data()
     train_x, test_x = np.expand_dims(train_x, -1), np.expand_dims(test_x, -1)
     train_y, test_y = np.expand_dims(train_y, -1), np.expand_dims(test_y, -1)
 
-  # Normalize the images in range [-1, 1]
-  #train_x = train_x.astype(np.float32) / 127.5 - 1
-  #test_x = test_x.astype(np.float32) / 127.5 - 1
 
   # Default image data format is "channels_last", change the image data to
   # "channels_first" if required.

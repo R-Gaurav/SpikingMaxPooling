@@ -72,7 +72,7 @@ model.summary()
 
 ################################################################################
 pres_time = 0.04  # how long to present each input, in seconds
-n_test = 100  # how many images to test
+n_test = 10  # how many images to test
 SCALE = 1.1
 
 
@@ -100,9 +100,12 @@ with net:
         test_images, presentation_time=pres_time
     )
 ################################################################################
+print(nengo_converter.model.layers)
+
 with net:
     nengo_loihi.add_params(net)  # allow on_chip to be set
-    net.config[nengo_converter.layers[to_spikes].ensemble].on_chip = False
+    #net.config[nengo_converter.layers[to_spikes].ensemble].on_chip = False
+    net.config[nengo_converter.layers[nengo_converter.model.layers[1]].ensemble].on_chip = False
 
 ################################################################################
 # Replace the TN MaxPooling with MAX joinOp based MaxPooling.
@@ -201,9 +204,10 @@ with net:
         nengo_converter.layers[conv1].ensemble
   ].block_shape = nengo_loihi.BlockShape((8, 11, 11), conv1_shape)
 
-  net.config[
-        nengo_converter.layers[dense0].ensemble
-  ].block_shape = nengo_loihi.BlockShape((32,), dense0_shape)
+  # You don't necessarily need to partition the Dense blocks, therefore comment.
+  #net.config[
+  #      nengo_converter.layers[dense0].ensemble
+  #].block_shape = nengo_loihi.BlockShape((32,), dense0_shape)
 
 ################# CHECK FOR ANY TENSORNODES ########################
 for node in net._nodes:
@@ -213,8 +217,7 @@ for node in net._nodes:
 
 #with nengo_loihi.Simulator(net, target="loihi", remove_passthrough=False) as loihi_sim:
 with nengo_loihi.Simulator(net, target="loihi") as loihi_sim:
-    configure_ensemble_for_2x2_max_join_op(
-        loihi_sim, ens, pool_size=(2, 2), num_chnls=NUM_CHNLS, rows=ROWS, cols=COLS)
+    configure_ensemble_for_2x2_max_join_op(loihi_sim, ens)
     loihi_sim.run(n_test * pres_time)
 
     # get output (last timestep of each presentation period)

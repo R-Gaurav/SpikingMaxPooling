@@ -21,7 +21,6 @@ from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_batches_of_exp_dataset
 from utils.base_utils.exp_utils import (get_grouped_slices_2d_pooling,
                                         get_isi_based_max_pooling_params)
-from utils.cnn_2d_utils import get_2d_cnn_model
 from utils.consts.exp_consts import SEED, MNIST, CIFAR10
 from utils.nengo_dl_utils import (get_nengo_dl_model, get_max_pool_global_net,
                                   get_isi_based_maximally_spiking_mask)

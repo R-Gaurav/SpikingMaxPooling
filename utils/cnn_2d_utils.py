@@ -65,13 +65,13 @@ def _get_dense_block(block, nn_dlyr, layer_objs_lst, actvn="relu"):
 
   return dense
 
-def get_2d_cnn_model(inpt_shape, exp_cfg, num_clss=10):
+def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
   """
   Returns a 2D CNN model.
 
   Args:
     inpt_shape <()>: A tuple of (img_rows, img_cols, num_channels).
-    exp_cfg <{}>: A dict of experimental config.
+    tf_cfg <{}>: A dict of TensorFlow experimental config.
     num_clss <int>: The number of classes.
 
   Returns:
@@ -80,7 +80,7 @@ def get_2d_cnn_model(inpt_shape, exp_cfg, num_clss=10):
   layer_objs_lst = []
   inpt_lyr = tf.keras.Input(shape=inpt_shape)
   layer_objs_lst.append(inpt_lyr)
-  model = exp_cfg["tf_model"]
+  model = tf_cfg["tf_model"]
 
   ###################### Construct the model's arch. ########################
   # Add Conv and MaxPool blocks.
@@ -96,7 +96,7 @@ def get_2d_cnn_model(inpt_shape, exp_cfg, num_clss=10):
   #x = tf.keras.layers.Flatten(data_format=layer.data_format)(x)
   x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
-  x = _get_dense_block(x, exp_cfg["nn_dlyr"], layer_objs_lst)
+  x = _get_dense_block(x, tf_cfg["nn_dlyr"], layer_objs_lst)
   # Add the final output Dense block.
   output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
 

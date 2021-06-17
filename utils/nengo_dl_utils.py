@@ -12,7 +12,6 @@ from focal_loss import SparseCategoricalFocalLoss
 
 #from configs.exp_configs import nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
-from utils.base_utils.exp_utils import get_grouped_slices_2d_pooling
 from utils.cnn_2d_utils import get_2d_cnn_model
 from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
                                      NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
@@ -20,7 +19,7 @@ from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
 
 def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
                        is_isi_based_max_pool=False, collect_probe_history=True,
-                       max_to_avg_pool=False):
+                       max_to_avg_pool=False, include_non_max_pool_probes=True):
   """
   Returns the nengo_dl model.
 
@@ -33,9 +32,11 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
     collect_probe_history <bool>: Collect probes entire `n_steps` simulation time
         history if True, else don't collect spikes.
     max_to_avg_pool <bool>: Set `max_to_avg_pool` in `Converter` to True or False.
+    include_non_max_pool_probes <bool>: Collect the probe data of Non-MP layers
+                                        if True else just the input/output Probes.
 
-  Return:
-    nengo.Model
+  Returns:
+    nengo.Model, [Probes]
   """
   log.INFO("TF Config: {}".format(tf_cfg))
   log.INFO("Nengo-DL Config: {}".format(ndl_cfg))
@@ -123,12 +124,13 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=10,
     if not collect_probe_history:
       nengo_dl.configure_settings(keep_history=False)
     nengo_dl.configure_settings(stateful=False)
-    for lyr_obj in layer_objs_lst[1:-1]:
-      # Skip the probes for MaxPooling layers as they won't be present in the
-      # Associative-Max based SNN, else execution will error out.
-      # TODO: Include it for other analysis though.
-      if not lyr_obj.name.startswith("max_pooling"):
-        nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
+    if include_non_max_pool_probes:
+      for lyr_obj in layer_objs_lst[1:-1]:
+        # Skip the probes for MaxPooling layers as they won't be present in the
+        # Associative-Max based SNN, else execution will error out.
+        # TODO: Include it for other analysis though.
+        if not lyr_obj.name.startswith("max_pooling"):
+          nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
   # Set the probes on the Output layer of the Nengo-DL model.
   nengo_output = ndl_model.outputs[layer_objs_lst[-1]]
   nengo_probes_obj_lst.append(nengo_output)
@@ -461,7 +463,7 @@ def get_isi_based_maximally_spiking_mask(t, inp):
 
   return max_pooled_ret.flatten()
 
-def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens, **kwargs):
+def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens):
   """
   Configures the Ensemble `ens` neurons for MaxPooling using NxSDK's MAX joinOp
   method.
@@ -470,11 +472,6 @@ def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens, **kwargs):
     loihi_sim <nengo_loihi.simulator.Simulator>: The NengoLoihi simulator object.
     ens <nengo.ensemble.Ensemble>: The Nengo Ensmeble object whose neurons are
                                    supposed to be configured for MaxPooling.
-    kwargs <dict>:
-      pool_size <tuple>: (int, int) for 2D Pooling - (row, col) arrangement.
-      num_chnls <int>: Number of channels in the reshaped matrix.
-      rows <int>: Number of rows in the reshaped matrix.
-      cols <int>: Number of columns in the reshaped matrix.
 
   Note: The number of neurons in `ens` should be equal to the number of neurons
         in the previous Convolutional ensemble, i.e. # neurons = total number
@@ -485,7 +482,6 @@ def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens, **kwargs):
   """
   nxsdk_board = loihi_sim.sims["loihi"].nxsdk_board
   board = loihi_sim.sims["loihi"].board
-  grouped_slices, start = get_grouped_slices_2d_pooling(**kwargs), 0
 
   # Get the blocks (which can be many depending on how large the Ensemble `ens`
   # is and in how many blocks is it broken).
