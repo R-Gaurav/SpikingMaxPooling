@@ -29,6 +29,7 @@ def nengo_dl_train():
   Trains a NengoDL Model.
   """
   log.INFO("TF EXP CONFIG: %s" % tf_cfg)
+  log.INFO("NENGO DL EXP CONFIG: %s" % ndl_cfg)
   ##############################################################################
   log.INFO("Getting the dataset: %s" % tf_cfg["dataset"])
   train_x, train_y, _, _ = get_exp_dataset(tf_cfg["dataset"])
@@ -40,12 +41,13 @@ def nengo_dl_train():
     inpt_shape = (3, 32, 32)
     num_clss = 10
   ##############################################################################
-
+  log.INFO("Getting the NengoDL model to be trained...:")
   ndl_model, ndl_mdl_probes = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="train", num_clss=num_clss)
   ndl_train_cfg = ndl_cfg["train_mode"]
   # TODO: Is there a need to set the following? May be when training neuron is Spiking Neuron?
   # with tf.keras.backend.learning_phase_scope(1), nengo_dl.Simulator(
+  log.INFO("Creating the NengoDL Simulator...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_train_cfg["train_batch_size"],
       seed=SEED, progress_bar=False) as ndl_sim:
@@ -62,10 +64,14 @@ def nengo_dl_train():
         loss=losses,
         metrics=["accuracy"]
     )
+    log.INFO("Training the model...")
     ndl_sim.fit(
       {ndl_mdl_probes[0]: train_x},
       {ndl_mdl_probes[-1]: train_y},
       epochs=tf_cfg["epochs"]
     )
+    log.INFO("Saving the trained model-parameters...")
     ndl_sim.save_params(
         ndl_train_cfg["ndl_train_mode_res_otpt_dir"]+"/ndl_trained_params")
+
+  log.INFO("NengoDL Training Done!")
