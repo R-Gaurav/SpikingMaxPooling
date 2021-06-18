@@ -25,7 +25,7 @@ dataset = MNIST # One of MNIST, CIFAR10
 tf_exp_cfg = {
   "batch_size": 200,
   "dataset": dataset,
-  "epochs": 20,
+  "epochs": 4,
   "lr": 1e-3,
   "nn_dlyr": 64,
   "tf_model": model,

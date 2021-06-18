@@ -25,9 +25,6 @@ np.random.seed(SEED)
 def tf_train_test():
   """
   Trains and Tests the TF code.
-
-  Args:
-    tf_cfg <dict>: A dict of experimental config.
   """
   log.INFO("TF EXP CONFIG: %s" % tf_cfg)
   ##############################################################################
