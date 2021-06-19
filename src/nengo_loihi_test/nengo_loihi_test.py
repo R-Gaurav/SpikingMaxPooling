@@ -43,6 +43,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       max_to_avg_pool=False, include_non_max_pool_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(nloihi_cfg["dataset"])
+  #RG: Set from which image to start testing.
+  # test_x, test_y = test_x[4:7], test_y[4:7] # 0:3, 3:6, 6:9 works with 40timesteps.
+  # 0:3, 3:6 doesn't work with 60 timesteps, 6:9 works with 60 timesteps.
   # Flatten `test_x`: (10000, 1, 784) for MNIST.
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
   pres_time = nloihi_cfg["test_mode"]["n_steps"] * 0.001 # Convert to ms.
@@ -172,6 +175,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
     for layer in ndl_model.model.layers[2:-1]:
       if layer.name.startswith("conv"):
         conv_shape = tuple(layer.output.shape[1:])
+        if np.prod(conv_shape) <= 1024:
+          continue
         ndl_model.net.config[
             ndl_model.layers[layer].ensemble].block_shape = (
             nengo_loihi.BlockShape(bls_dict["conv2d_%s" % i], conv_shape))

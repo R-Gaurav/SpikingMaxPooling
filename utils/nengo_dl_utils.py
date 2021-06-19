@@ -124,7 +124,7 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
   with ndl_model.net:
     if not collect_probe_history:
       nengo_dl.configure_settings(keep_history=False)
-    #nengo_dl.configure_settings(stateful=False)
+    nengo_dl.configure_settings(stateful=False)
     if include_non_max_pool_probes:
       for lyr_obj in layer_objs_lst[1:-1]:
         # Skip the probes for MaxPooling layers as they won't be present in the

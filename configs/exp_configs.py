@@ -39,9 +39,10 @@ nengo_loihi_cfg = {
   "trained_model_params": (
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
-    "n_steps": 40, # in milliseconds.
-    "n_test": 100, # Number of images to be tested.
-    "scale": 1.1, # Scaling parameter of the output of root neurons.
+    "n_steps": 60, # in milliseconds.
+    "n_test": 200, # Number of images to be tested.
+    "scale": 1.1, # Scaling parameter of the output of root neurons. (MODEL_1)
+    # "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_2)
     "sfr": 400,
     "synapse": 0.005,
     "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
@@ -56,7 +57,7 @@ nengo_loihi_cfg = {
     "model_2": {
       "conv2d_0": (1, 26, 26),
       "conv2d_1": (8, 11, 11),
-      "conv2d_2": (32, 3, 3)
+      "conv2d_2": (24, 3, 3)
     },
   },
 }

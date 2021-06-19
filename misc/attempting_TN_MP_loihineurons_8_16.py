@@ -156,7 +156,7 @@ with net:
   nengo.Connection(
       conn_from_pconv_to_max.pre_obj[grouped_slices],
       ens.neurons,
-      transform=conn_from_pconv_to_max.transform,  #NoTransform.
+      transform=None, #conn_from_pconv_to_max.transform,  #NoTransform.
       synapse=conn_from_pconv_to_max.synapse, # None.
       function=conn_from_pconv_to_max.function # None.
   )
