@@ -44,7 +44,7 @@ def tf_train_test():
   log.INFO("Compiling and training the model...")
   tf_model.compile(
       optimizer=tf.optimizers.Adam(tf_cfg["lr"]),
-      loss=tf.losses.CategoricalCrossentropy(),
+      loss=tf.losses.CategoricalCrossentropy(from_logits=True),
       metrics=[tf.metrics.categorical_accuracy])
   tf_model.fit(train_x, train_y, batch_size=tf_cfg["batch_size"],
                epochs=tf_cfg["epochs"])
@@ -52,7 +52,7 @@ def tf_train_test():
   tf_model.save_weights(tf_cfg["tf_wts_otpt_dir"]+"/weights")
 
   log.INFO("Saving weights done. Now testing/evaluating the model...")
-  loss, acc = tf_model.evaluate(test_x, test_y)
+  loss, acc = tf_model.evaluate(test_x[:200], test_y[:200])
   log.INFO("Model: %s performance loss: %s accuracy: %s"
             % (tf_cfg["tf_model"]["name"], loss, acc))
 
