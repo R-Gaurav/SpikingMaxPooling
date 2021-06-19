@@ -72,7 +72,7 @@ model.summary()
 
 ################################################################################
 pres_time = 0.04  # how long to present each input, in seconds
-n_test = 10  # how many images to test
+n_test = 200  # how many images to test
 SCALE = 1.1
 
 
@@ -93,6 +93,7 @@ nengo_output = nengo_converter.outputs[dense1]
 # build network, load in trained weights, save to network
 with nengo_dl.Simulator(net) as nengo_sim:
     nengo_sim.load_params("attempting_TN_MP_loihineurons_8_16")
+    #nengo_sim.load_params("ndl_trained_params")
     nengo_sim.freeze_params(net)
 
 with net:
@@ -104,6 +105,7 @@ print(nengo_converter.model.layers)
 
 with net:
     nengo_loihi.add_params(net)  # allow on_chip to be set
+    # Both of the following lines works.
     #net.config[nengo_converter.layers[to_spikes].ensemble].on_chip = False
     net.config[nengo_converter.layers[nengo_converter.model.layers[1]].ensemble].on_chip = False
 

@@ -24,8 +24,7 @@ def _get_2d_cnn_block(block, layer_cfg, layer_objs_lst):
   # transforms on host to chip connections
   conv = tf.keras.layers.Conv2D(
     layer_cfg.num_kernels, layer_cfg.kernel_dims, strides=layer_cfg.stride_dims,
-    padding="valid", data_format=layer_cfg.data_format, activation="relu",
-    kernel_initializer="he_uniform", use_bias=False)(block)
+    data_format=layer_cfg.data_format, activation="relu", use_bias=False)(block)
   layer_objs_lst.append(conv)
 
   return conv
@@ -62,9 +61,7 @@ def _get_dense_block(block, nn_dlyr, layer_objs_lst, actvn="relu"):
     tf.Tensor.
   """
   # `use_bias=True` can be set for chip to host connections.
-  dense = tf.keras.layers.Dense(
-      nn_dlyr,
-      activation=actvn, kernel_initializer="he_uniform", use_bias=True)(block)
+  dense = tf.keras.layers.Dense(nn_dlyr, activation=actvn, use_bias=True)(block)
   layer_objs_lst.append(dense)
 
   return dense

@@ -49,20 +49,23 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
 
   log.INFO("Loading the trained Params: %s" % nloihi_cfg["trained_model_params"])
   nengo_input, nengo_output = ngo_probes_lst[0], ngo_probes_lst[-1]
+  # Build the Network, load the trained weights, save to network.
   with nengo_dl.Simulator(ndl_model.net) as ndl_sim:
-    ndl_sim.load_params(nloihi_cfg["trained_model_params"]+"/ndl_trained_params")
+    ndl_sim.load_params(nloihi_cfg["trained_model_params"]+ #"/ndl_trained_params")
+                        "/attempting_TN_MP_loihineurons_8_16")
     ndl_sim.freeze_params(ndl_model.net)
 
   log.INFO("Configuring the network...")
   with ndl_model.net:
+    nengo_input.output = nengo.processes.PresentInput(
+        test_x, presentation_time=pres_time)
+
     nengo_loihi.add_params(ndl_model.net) # Allow on_chip to be set for Ensembles.
     # TODO: Check if on_chip is set True for the new MAX joinOp Ensemble?
     # In the TF model, the first Conv layer (immediately after the Input layer)
     # is responsible to converting images to spikes, therefore set it to run Off-Chip.
     ndl_model.net.config[
         ndl_model.layers[ndl_model.model.layers[1]].ensemble].on_chip = False
-    nengo_input.output = nengo.processes.PresentInput(
-        test_x, presentation_time=pres_time)
 
   # Get the To/Fro connections to the MaxPool TensorNodes to be replaced.
   log.INFO("Getting all the To/Fro connections with MaxPool TensorNodes")
@@ -106,7 +109,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       # Create the Ensemble to do the MAX joinOp.
       num_neurons = num_chnls * rows * cols
       max_join_op_ens = nengo.Ensemble(
-        n_neurons = num_neurons, dimensions=1, gain=1000*np.ones(num_neurons),
+        n_neurons=num_neurons, dimensions=1, gain=1000*np.ones(num_neurons),
         bias=np.zeros(num_neurons), seed=SEED,
         neuron_type=nengo_loihi.neurons.LoihiSpikingRectifiedLinear(
           amplitude=nloihi_cfg["test_mode"]["scale"]/1000,
@@ -133,10 +136,11 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
           # node/neuron which outputs spikes corresponding to the MAX value.
           max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
           conn_from_max_to_nconv.post_obj,
-          transform=conn_from_max_to_nconv.transform,
-          # Synapse required because input to Conv from MAX JoinOp Ens is spikes.
+          transform=conn_from_max_to_nconv.transform, # Convolution
+          # The conn_from_max_to_nconv.synapse is None, but `Synapse` is required
+          # because input to next Conv layer from MAX JoinOp Ens is spikes.
           synapse=nloihi_cfg["test_mode"]["synapse"],
-          function=conn_from_max_to_nconv.function
+          function=conn_from_max_to_nconv.function # None.
       )
 
       log.INFO("To/From connection w.r.t. %s done!"
@@ -158,8 +162,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
   # Only the intermediate Conv layers and Dense layers run on Loihi, the Input
   # layer, first Conv layer (to convert input to spikes) run off-chip, and the
   # last Dense layer (to collect class prediction scores/logits) runs off-chip.
+  bls_dict, i = nloihi_cfg["layer_blockshapes"][tf_cfg["tf_model"]["name"]], 0
   with ndl_model.net:
-    bls_dict, i = nloihi_cfg["layer_blockshapes"][tf_cfg["tf_model"]["name"]], 0
+    # Exclude the Conv layer at index 1 since it runs off-chip to create spikes.
     for layer in ndl_model.model.layers[2:-1]:
       if layer.name.startswith("conv"):
         conv_shape = tuple(layer.output.shape[1:])
@@ -170,14 +175,17 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       # For the intermediate "Dense" layers, they are already small Ensembles
       # with number of neurons less than 1024, so no need to partition them.
 
+  ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
   with nengo_loihi.Simulator(ndl_model.net, target="loihi") as loihi_sim:
-    #for max_join_op_ens in max_join_op_ens_list:
-    #  configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens)
+    for max_join_op_ens in max_join_op_ens_list:
+      configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens)
     loihi_sim.run(nloihi_cfg["test_mode"]["n_test"] * pres_time)
 
   # Get the output (last timestep of each presentation period)
   pres_steps = int(round(pres_time / loihi_sim.dt))
   output = loihi_sim.data[nengo_output][pres_steps-1 :: pres_steps]
+
+  # Compute Loihi Accuracy.
   loihi_predictions = np.argmax(output, axis=-1)
   correct = 100 * np.mean(
       loihi_predictions == np.argmax(
