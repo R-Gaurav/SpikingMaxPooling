@@ -51,8 +51,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
   nengo_input, nengo_output = ngo_probes_lst[0], ngo_probes_lst[-1]
   # Build the Network, load the trained weights, save to network.
   with nengo_dl.Simulator(ndl_model.net) as ndl_sim:
-    ndl_sim.load_params(nloihi_cfg["trained_model_params"]+ #"/ndl_trained_params")
-                        "/attempting_TN_MP_loihineurons_8_16")
+    ndl_sim.load_params(nloihi_cfg["trained_model_params"]+ "/ndl_trained_params")
+                        #"/attempting_TN_MP_loihineurons_8_16")
     ndl_sim.freeze_params(ndl_model.net)
 
   log.INFO("Configuring the network...")
@@ -129,7 +129,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       nengo.Connection(
           conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_join_op_ens.neurons,
-          transform=conn_from_pconv_to_max.transform, # NoTransform.
+          transform=None, #conn_from_pconv_to_max.transform, # NoTransform.
           synapse=conn_from_pconv_to_max.synapse, # None => Feed Spikes to JoinOp Ens.
           function=conn_from_pconv_to_max.function # None.
       )
