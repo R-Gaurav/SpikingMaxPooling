@@ -45,9 +45,10 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
 
   # Creating the model.
   model, layer_objs_lst = get_2d_cnn_model(inpt_shape, tf_cfg, num_clss)
-  log.INFO("Writing tf_model.summary() to file ndl_tf_model_summary.txt")
-  with open(ngo_cfg["test_mode"]["test_mode_res_otpt_dir"]+
-            "/nengo_tf_model_summary.txt", "w") as f:
+  log.INFO("Writing tf_model.summary() to file nengo_tf_model_summary.txt")
+  file_path = (ngo_cfg["test_mode"]["test_mode_res_otpt_dir"] if mode == "test"
+               else ngo_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"])
+  with open(file_path + "/nengo_tf_model_summary.txt", "w") as f:
     model.summary(print_fn=lambda x: f.write(x + "\n"))
 
   if mode=="test":
