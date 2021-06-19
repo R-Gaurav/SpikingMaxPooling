@@ -47,15 +47,15 @@ MODEL_2 = {
   "layers": {
     "layer_1": Layer(name="Conv", num_kernels=3, kernel_dims=(1, 1),
                      stride_dims=(1, 1), data_format="channels_first"),
-    "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
+    "layer_2": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
                      stride_dims=(1, 1), data_format="channels_first"),
     "layer_3": Layer(name="MaxPool", kernel_dims=(2, 2),
                      data_format="channels_first"),
-    "layer_4": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+    "layer_4": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
                      stride_dims=(1, 1), data_format="channels_first"),
     "layer_5": Layer(name="MaxPool", kernel_dims=(2, 2),
                      data_format="channels_first"),
-    "layer_6": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+    "layer_6": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
                      stride_dims=(1, 1), data_format="channels_first")
   }
 }

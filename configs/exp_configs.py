@@ -19,13 +19,13 @@ from utils.consts.model_consts import MODEL_1, MODEL_2, MODEL_3
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_1
+model = MODEL_2
 dataset = MNIST # One of MNIST, CIFAR10
 
 tf_exp_cfg = {
   "batch_size": 200,
   "dataset": dataset,
-  "epochs": 4,
+  "epochs": 16,
   "lr": 1e-3,
   "nn_dlyr": 64,
   "tf_model": model,
@@ -75,9 +75,10 @@ nengo_dl_cfg = {
     "skip_isi_tstep": 60,
   },
   "train_mode": {
-    "neuron": nengo.RectifiedLinear(),
+    #"neuron": nengo.RectifiedLinear(),
+    "neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": None,
-    "sfr": 1,
+    "sfr": 100,
     "n_steps": 1,
     "train_batch_size": 200,
     "ndl_train_mode_res_otpt_dir": (

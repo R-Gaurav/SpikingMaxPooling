@@ -107,6 +107,10 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       log.INFO("Grouped slices of Conv: %s for MaxPooling obtained." % conv_label)
 
       # Create the Ensemble to do the MAX joinOp.
+      # Check for the feature maps (over which MaxPooling is done) if they have
+      # odd number of rows and cols, if odd then discard the last row and column.
+      if rows % 2 and cols % 2: # Note that in this project, rows = cols.
+        rows, cols = rows-1, cols-1
       num_neurons = num_chnls * rows * cols
       max_join_op_ens = nengo.Ensemble(
         n_neurons=num_neurons, dimensions=1, gain=1000*np.ones(num_neurons),
@@ -123,7 +127,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
 
       ######### CONNECT THE PREV ENS/CONV TO MAX_JOINOP_ENSEMBLE #########
       nengo.Connection(
-          conn_from_pconv_to_max.pre_obj[grouped_slices],
+          conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_join_op_ens.neurons,
           transform=conn_from_pconv_to_max.transform, # NoTransform.
           synapse=conn_from_pconv_to_max.synapse, # None => Feed Spikes to JoinOp Ens.
@@ -213,7 +217,6 @@ def nengo_loihi_test():
   _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss)
 
 if __name__ == "__main__":
-  print("*"*100)
   log.configure_log_handler(
     "%s_sfr_%s_n_steps_%s_synapse_%s_timestamp_%s.log" % (
     nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] + "_nengo_loihi_test_",
