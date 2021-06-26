@@ -65,40 +65,19 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
         #inference_only=True,
         max_to_avg_pool=max_to_avg_pool
     )
-    # If `is_isi_based_max_pool` is set to True, then do NOT synapse the
-    # connections to MaxPooling layers so as to receive the spikes and not the
-    # synpased values. If not set to True, then synapse the connections to
-    # MaxPooling layers.
-    #if not is_isi_based_max_pool:
-    #  # Explicitly set the connection synapse from Conv to MaxPooling layers.
-    #  for i, conn in enumerate(ndl_model.net.all_connections):
-    #    if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
-    #      if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
-    #          conn.post_obj.label.startswith("max_pooling")):
-    #        log.INFO(
-    #            "Connection: {}, | and prior to explicit synapsing: {}".format(
-    #            conn, conn.synapse))
-    #        ndl_model.net._connections[i].synapse = nengo.Lowpass(
-    #            test_cfg["synapse"])
-    #        log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
-    #            conn, conn.synapse))
 
-    # If `is_isi_based_max_pool` is set to True then since the incoming spikes
-    # to the MaxPooling layers were not synpased, we need to synapse the selected
-    # outgoing spikes from the MaxPooling layer to the next Conv layer.
-    #if is_isi_based_max_pool:
-    #  # Explicitly set the connection synapse from MaxPooling layers to Conv.
-    #  for i, conn in enumerate(ndl_model.net.all_connections):
-    #    if (isinstance(conn.pre_obj, nengo_dl.tensor_node.TensorNode) and
-    #        conn.pre_obj.label.startswith("max_pooling")):
-    #      if isinstance(conn.post_obj, nengo.ensemble.Neurons):
-    #        log.INFO(
-    #            "Connection: {}, | and prior to explicit synapsing: {}".format(
-    #            conn, conn.synapse))
-    #        ndl_model.net._connections[i].synapse = nengo.Lowpass(
-    #            test_cfg["synapse"])
-    #        log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
-    #            conn, conn.synapse))
+    # Explicitly set the connection synapse from Conv to MaxPooling layers.
+    for i, conn in enumerate(ndl_model.net.all_connections):
+      if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
+        if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
+            conn.post_obj.label.startswith("max_pooling")):
+          log.INFO(
+              "Connection: {}, | and prior to explicit synapsing: {}".format(
+              conn, conn.synapse))
+          ndl_model.net._connections[i].synapse = nengo.Lowpass(
+              test_cfg["synapse"])
+          log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
+              conn, conn.synapse))
 
   else:
     train_cfg = ngo_cfg["train_mode"]
@@ -139,7 +118,7 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
   return ndl_model, nengo_probes_obj_lst
 
 def percentile_l2_loss_range(y_true, y, sample_weight=None, min_rate=0.0,
-                             max_rate=150.0, percentile=99.0):
+                             max_rate=1.0, percentile=99.9):
   """
   Compute the percentile loss for regularizing firing rate of neurons.
     https://www.frontiersin.org/articles/10.3389/fnins.2020.00662/full

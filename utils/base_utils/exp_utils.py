@@ -8,6 +8,7 @@ import nengo
 import nengo_dl
 import numpy as np
 import pickle
+import random
 
 import _init_paths
 
@@ -389,3 +390,17 @@ def get_isi_based_max_pooling_params(layers):
       NEURONS_LAST_SPIKED_TS[size] = np.zeros(lyr_otp)
       NEURONS_LATEST_ISI[size] = np.ones(lyr_otp)*np.inf
       MAX_POOL_MASK[size] = np.ones(lyr_otp)/NUM_X
+
+def get_shuffled_lists_in_unison(lst_a, lst_b):
+  """
+  Shuffles two passed lists in unison.
+  Args:
+    lst_a ([]): 1st list.
+    lst_b ([]): 2nd list.
+  Returns:
+    [], []
+  """
+  lst_f = list(zip(lst_a, lst_b))
+  random.shuffle(lst_f)
+  lst_a, lst_b = zip(*lst_f)
+  return list(lst_a), list(lst_b)

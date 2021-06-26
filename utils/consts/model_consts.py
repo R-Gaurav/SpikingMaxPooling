@@ -28,7 +28,7 @@ MODEL_1 = {
   # Total params: 125,989 (MNIST), 175,147 (CIFAR10)
   "name": "model_1",
   "layers": {
-    "layer_1": Layer(name="Conv", num_kernels=3, kernel_dims=(1, 1),
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
                      stride_dims=(1, 1), data_format="channels_first"),
     "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
                      stride_dims=(1, 1), data_format="channels_first"),
@@ -49,7 +49,7 @@ MODEL_2 = {
   # on Loihi.
   "name": "model_2",
   "layers": {
-    "layer_1": Layer(name="Conv", num_kernels=3, kernel_dims=(1, 1),
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
                      stride_dims=(1, 1), data_format="channels_first"),
     "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
                      stride_dims=(1, 1), data_format="channels_first"),
@@ -64,30 +64,135 @@ MODEL_2 = {
   }
 }
 
-#MODEL_2 = {
-#  "name": "model_2",
-#  "layers": {
-#    "layer_1": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
-#                     stride_dims=(1, 1), data_format="channels_first"),
-#    "layer_2": Layer(name="MaxPool", kernel_dims=(2, 2),
-#                     data_format="channels_first"),
-#    "layer_3": Layer(name="Conv", num_kernels=64, kernel_dims=(3, 3),
-#                     stride_dims=(2, 2), data_format="channels_first")
-#  }
-#}
-
 MODEL_3 = {
   "name": "model_3",
   "layers": {
-    "layer_1": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
                      stride_dims=(1, 1), data_format="channels_first"),
-    "layer_2": Layer(name="MaxPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
-    "layer_3": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
+    "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_3": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
                      stride_dims=(1, 1), data_format="channels_first"),
     "layer_4": Layer(name="MaxPool", kernel_dims=(2, 2),
                      data_format="channels_first"),
-    "layer_5": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
+    "layer_5": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_6": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_7": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
                      stride_dims=(1, 1), data_format="channels_first")
   }
 }
+
+MODEL_4 = {
+  "name": "model_4",
+  "layers": {
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_3": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_4": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_5": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_6": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_7": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_8": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first")
+  }
+}
+
+MODEL_5 = {
+  "name": "model_5",
+  "layers": {
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_3": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_4": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_5": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_6": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_7": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_8": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first")
+  }
+}
+
+MODEL_6 = {
+  "name": "model_6",
+  "layers": {
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_3": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_4": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_5": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_6": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_7": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+  }
+}
+
+MODEL_7 = { # TF CIFAR10: Without Data Augmentation: 71% ACC. (32 EPOCHS)
+            # TF CIFAR10: With Data Augmentation: 78% ACC. (32 EPOCHS)
+  "name": "model_7",
+  "layers": {
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_2": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_3": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_4": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_5": Layer(name="Conv", num_kernels=64, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_6": Layer(name="Conv", num_kernels=64, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_7": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_first"),
+    "layer_8": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+    "layer_9": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_first"),
+  }
+}
+
+"""
+https://www.kaggle.com/amyjang/tensorflow-cifar10-cnn-tutorial
+
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Conv2D(32, 3, padding='same', input_shape=x_train.shape[1:], activation='relu'),
+    tf.keras.layers.Conv2D(32, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Dropout(0.25),
+
+    tf.keras.layers.Conv2D(64, 3, padding='same', activation='relu'),
+    tf.keras.layers.Conv2D(64, 3, activation='relu'),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Dropout(0.25),
+
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(num_classes, activation='softmax'),
+])
+
+model.compile(optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.0001, decay=1e-06),
+            loss='categorical_crossentropy', metrics=['acc'])
+"""

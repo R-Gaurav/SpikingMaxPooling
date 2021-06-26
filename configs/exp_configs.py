@@ -8,7 +8,8 @@ import pathlib
 
 from utils.consts.dir_consts import EXP_OTPT_DIR
 from utils.consts.exp_consts import MNIST, CIFAR10
-from utils.consts.model_consts import MODEL_1, MODEL_2, MODEL_3
+from utils.consts.model_consts import (
+    MODEL_1, MODEL_2, MODEL_3, MODEL_4, MODEL_5, MODEL_6, MODEL_7)
 
 # The TF train/test and Nengo-DL test variations are only with `model` and
 # `dataset`, however, in case of Nengo-DL test, one can include variations with
@@ -19,13 +20,14 @@ from utils.consts.model_consts import MODEL_1, MODEL_2, MODEL_3
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_2
-dataset = MNIST # One of MNIST, CIFAR10
+model = MODEL_7
+dataset = CIFAR10 # One of MNIST, CIFAR10
+sfr = 100 # Only for NengoDL, for NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
-  "batch_size": 200,
+  "batch_size": 100,
   "dataset": dataset,
-  "epochs": 16,
+  "epochs": 64,
   "lr": 1e-3,
   "nn_dlyr": 64,
   "tf_model": model,
@@ -67,26 +69,27 @@ nengo_dl_cfg = {
   "tf_wts_inpt_dir": (
       EXP_OTPT_DIR + "/%s/%s/tf_otpts/tf_trained_wts/weights"
       % (dataset, model["name"])),
+  "trained_model_params": (
+      EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
-    "spk_neuron": nengo.SpikingRectifiedLinear(),
+    "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": 0.005,
-    "sfr": 25,
-    "n_steps": 60,
+    "sfr": sfr,
+    "n_steps": 80, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
-        EXP_OTPT_DIR + "/%s/%s/tf_otpts/ndl_test_only_results/"
+        EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"
         % (dataset, model["name"])),
     # Timestep after which MAX_POOL_MASK will not be updated, rather the learned
     # mask up till this timestep will determine the maximally firing neuron.
     "skip_isi_tstep": 60,
   },
   "train_mode": {
-    #"neuron": nengo.RectifiedLinear(),
     "neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": None,
-    "sfr": 100,
+    "sfr": sfr,
     "n_steps": 1,
-    "train_batch_size": 200,
+    "train_batch_size": 100,
     "ndl_train_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   }

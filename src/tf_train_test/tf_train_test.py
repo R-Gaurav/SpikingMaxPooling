@@ -30,9 +30,17 @@ def tf_train_test():
   ##############################################################################
   log.INFO("Getting the dataset: %s" % tf_cfg["dataset"])
   train_x, train_y, test_x, test_y = get_exp_dataset(tf_cfg["dataset"])
+  log.INFO("Augmenting the dataset: %s" % tf_cfg["dataset"])
+  train_idg = tf.keras.preprocessing.image.ImageDataGenerator(
+      width_shift_range=0.1, height_shift_range=0.1, rotation_range=20,
+      horizontal_flip=True, data_format="channels_first")
+  train_idg.fit(train_x, seed=SEED)
 
   if tf_cfg["dataset"] == MNIST:
     inpt_shape = (1, 28, 28)
+    num_clss = 10
+  elif tf_cfg["dataset"] == CIFAR10:
+    inpt_shape = (3, 32, 32)
     num_clss = 10
   ##############################################################################
 
@@ -46,13 +54,16 @@ def tf_train_test():
       optimizer=tf.optimizers.Adam(tf_cfg["lr"]),
       loss=tf.losses.CategoricalCrossentropy(from_logits=True),
       metrics=[tf.metrics.categorical_accuracy])
-  tf_model.fit(train_x, train_y, batch_size=tf_cfg["batch_size"],
-               epochs=tf_cfg["epochs"])
+  tf_model.fit(train_idg.flow(
+               train_x, train_y, seed=SEED, batch_size=tf_cfg["batch_size"]),
+               batch_size=tf_cfg["batch_size"], epochs=tf_cfg["epochs"])
+  #tf_model.fit(train_x, train_y,
+  #             batch_size=tf_cfg["batch_size"], epochs=tf_cfg["epochs"])
   log.INFO("Training done. Saving the model weights...")
   tf_model.save_weights(tf_cfg["tf_wts_otpt_dir"]+"/weights")
 
   log.INFO("Saving weights done. Now testing/evaluating the model...")
-  loss, acc = tf_model.evaluate(test_x[:200], test_y[:200])
+  loss, acc = tf_model.evaluate(test_x, test_y)
   log.INFO("Model: %s performance loss: %s accuracy: %s"
             % (tf_cfg["tf_model"]["name"], loss, acc))
 

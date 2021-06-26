@@ -49,6 +49,8 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
       progress_bar=False) as sim:
+    sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
+
     acc, n_test_imgs = 0, 0
     for batch in test_batches:
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
@@ -221,15 +223,28 @@ def _do_isi_based_max_pooling(inpt_shape, num_clss):
       # Connection from previous Conv to current Max TensorNode.
       conn_from_pconv_to_max = ndl_model.net.all_connections[i]
       # Connection from current Max TensorNode to next Conv.
-      conn_from_max_to_nconv = ndl_model.net.all_connections[i+3]
+      conn_from_max_to_nconv = ndl_model.net.all_connections[i+1]
       log.INFO("Found connection from prev conv to max pool: {} with transform: "
                "{}, function: {}, and synapse: {}".format(conn_from_pconv_to_max,
                conn_from_pconv_to_max.transform, conn_from_pconv_to_max.function,
                conn_from_pconv_to_max.synapse))
+      # Set the connection synapse from the Conv to MaxPooling layers to None to
+      # receive spikes for ISI based MaxPooling.
+      conn_from_pconv_to_max.synapse = None
+      log.INFO("Connection: {}, | and after setting synapse to None: {}".format(
+          conn_from_pconv_to_max, conn_from_pconv_to_max.synapse))
+
       log.INFO("Found connection from max pool to next conv: {} with transform: "
                "{}, function: {}, and synapse: {}".format(conn_from_max_to_nconv,
                conn_from_max_to_nconv.transform, conn_from_max_to_nconv.function,
                conn_from_max_to_nconv.synapse))
+      # Since the incoming spikes to the MaxPooling layers were not synpased, we
+      # need to synapse the selected outgoing spikes from the MaxPooling layer to
+      # the next Conv layer.
+      conn_from_max_to_nconv.synapse = nengo.Lowpass(ndl_cfg["test_mode"]["synapse"])
+      log.INFO("Connection: {}, and after setting Lowpass synapse: {}".format(
+          conn_from_max_to_nconv, conn_from_max_to_nconv.synapse))
+
       all_mp_tn_conns.append(
           (conn_from_pconv_to_max, conn_from_max_to_nconv))
 
@@ -312,19 +327,23 @@ def nengo_dl_test():
   if ndl_cfg["dataset"] == MNIST:
     inpt_shape = (1, 28, 28)
     num_clss = 10
+  elif ndl_cfg["dataset"] == CIFAR10:
+    inpt_shape = (3, 32, 32)
+    num_clss = 10
+
   ##############################################################################
 
   log.INFO("*"*100)
   log.INFO("Testing in TensorNode MaxPooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False)
 
+  """
   log.INFO("Testing in Max To Avg Pooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   log.INFO("Testing in custom associative max mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
-  """
   log.INFO("Testing in custom associative avg mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=False)
 
@@ -335,7 +354,7 @@ def nengo_dl_test():
 if __name__ == "__main__":
   log.configure_log_handler(
       "%s_sfr_%s_n_steps_%s_synapse_%s_%s.log" % (
-      ndl_cfg["test_mode"]["ndl_test_mode_res_otpt_dir"] + __file__,
+      ndl_cfg["test_mode"]["test_mode_res_otpt_dir"] + __file__,
       ndl_cfg["test_mode"]["sfr"], ndl_cfg["test_mode"]["n_steps"],
       ndl_cfg["test_mode"]["synapse"], datetime.datetime.now()))
   nengo_dl_test()
