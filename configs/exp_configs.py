@@ -20,14 +20,14 @@ from utils.consts.model_consts import (
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_7
-dataset = CIFAR10 # One of MNIST, CIFAR10
+model = MODEL_2
+dataset = MNIST # One of MNIST, CIFAR10
 sfr = 100 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
   "batch_size": 100,
   "dataset": dataset,
-  "epochs": 8 if dataset == MNIST else 64,
+  "epochs": 12 if dataset == MNIST else 64,
   "lr": 5e-3,
   "nn_dlyr": 64,
   "tf_model": model,
@@ -75,7 +75,7 @@ nengo_dl_cfg = {
     "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 80, # 80 required for a deeper MODEL_7
+    "n_steps": 30, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"

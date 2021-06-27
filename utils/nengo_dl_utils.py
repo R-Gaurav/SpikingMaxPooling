@@ -18,8 +18,8 @@ from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
                                      MAX_POOL_MASK, NUM_X)
 
 def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
-                       is_isi_based_max_pool=False, collect_probe_history=True,
-                       max_to_avg_pool=False, include_non_max_pool_probes=True):
+                       collect_probe_history=True, max_to_avg_pool=False,
+                       load_tf_trained_wts=False, include_non_max_pool_probes=True):
   """
   Returns the nengo_dl model.
 
@@ -32,6 +32,7 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
     collect_probe_history <bool>: Collect probes entire `n_steps` simulation time
         history if True, else don't collect spikes.
     max_to_avg_pool <bool>: Set `max_to_avg_pool` in `Converter` to True or False.
+    load_tf_trained_wts <bool>: Load TF trained weights if True else don't.
     include_non_max_pool_probes <bool>: Collect the probe data of Non-MP layers
                                         if True else just the input/output Probes.
 
@@ -53,8 +54,10 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
 
   if mode=="test":
     test_cfg = ngo_cfg["test_mode"]
-    #log.INFO("Test Mode: Loading the TF trained weights in the model...")
-    #model.load_weights(ngo_cfg["tf_wts_inpt_dir"])
+    if load_tf_trained_wts:
+      log.INFO("Test Mode: Loading the TF trained weights in the model...")
+      model.load_weights(ngo_cfg["tf_wts_inpt_dir"])
+
     log.INFO("Test Mode: Converting the TF model to spiking Nengo-DL model...")
     np.random.seed(SEED)
     ndl_model = nengo_dl.Converter(

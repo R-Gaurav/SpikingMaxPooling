@@ -96,10 +96,10 @@ def get_batches_of_exp_dataset(ndl_cfg, is_test=True):
       batch_imgs, batch_clss = get_shuffled_lists_in_unison(batch_imgs, batch_clss)
 
       for i, img in enumerate(batch_imgs):
-        params = train_idg.get_random_transform(img.shape)
-        batch_x[i] = train_idg.standardize(train_idg.apply_transform(img, params))
+        #params = train_idg.get_random_transform(img.shape)
+        #batch_x[i] = train_idg.standardize(train_idg.apply_transform(img, params))
         #batch_x[i] = train_idg.apply_transform(img, params)
-        #batch_x[i] = img
+        batch_x[i] = img
         batch_y[i] = batch_clss[i]
 
       # Flatten the `batch_x` images.
