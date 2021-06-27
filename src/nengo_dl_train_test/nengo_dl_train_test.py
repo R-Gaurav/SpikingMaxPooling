@@ -59,8 +59,7 @@ def nengo_dl_train():
     }
 
     ndl_sim.compile(
-        #optimizer=tf.optimizers.Adam(learning_rate=tf_cfg["lr"]*5, decay=1e-3),
-        optimizer=tf.keras.optimizers.RMSprop(learning_rate=0.005),
+        optimizer=tf.optimizers.Adam(learning_rate=tf_cfg["lr"], decay=1e-4),
         loss=losses,
         metrics=["accuracy"]
     )

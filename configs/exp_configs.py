@@ -22,13 +22,13 @@ from utils.consts.model_consts import (
 
 model = MODEL_7
 dataset = CIFAR10 # One of MNIST, CIFAR10
-sfr = 100 # Only for NengoDL, for NengoLoihi, it is set separately.
+sfr = 100 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
   "batch_size": 100,
   "dataset": dataset,
-  "epochs": 64,
-  "lr": 1e-3,
+  "epochs": 8 if dataset == MNIST else 64,
+  "lr": 5e-3,
   "nn_dlyr": 64,
   "tf_model": model,
   "tf_res_otpt_dir": EXP_OTPT_DIR + "/%s/%s/tf_otpts/" % (dataset, model["name"]),
