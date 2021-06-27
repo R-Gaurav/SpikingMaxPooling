@@ -11,7 +11,7 @@ import _init_paths
 from utils.consts.exp_consts import MNIST, CIFAR10, SEED
 from utils.base_utils.exp_utils import get_shuffled_lists_in_unison
 
-def get_exp_dataset(dataset, channels_first=True):
+def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None):
   """
   Returns MNIST data with first dimension as the channel dimension if
   `channels_first` = True.
@@ -19,6 +19,8 @@ def get_exp_dataset(dataset, channels_first=True):
   Args:
     dataset <str>: One of MNIST | CIFAR10. Both are in range 0 to 255.
     channels_first <bool>: Make the first dimension as channel dimension if True.
+    start_idx <int>: The start index (inclusive) of the test dataset.
+    end_idx <int>: The end index (exclusive) of the test dataset
 
   Returns:
     numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray
@@ -48,7 +50,12 @@ def get_exp_dataset(dataset, channels_first=True):
   train_y = np.eye(10, dtype=np.float32)[train_y].squeeze(axis=1)
   test_y = np.eye(10, dtype=np.float32)[test_y].squeeze(axis=1)
 
-  return train_x, train_y, test_x, test_y
+  if start_idx and end_idx:
+    log.INFO("Partial test data returned. Start Index: %s, End Index: %s"
+             % (start_idx, end_idx))
+    return train_x, train_y, test_x[start_idx:end_idx], test_y[start_idx:end_idx]
+  else:
+    return train_x, train_y, test_x, test_y
 
 def get_batches_of_exp_dataset(ndl_cfg, is_test=True):
   """

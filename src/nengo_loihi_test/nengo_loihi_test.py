@@ -4,6 +4,7 @@
 # Author: Ramashish Gaurav
 #
 
+import argparse
 import datetime
 import nengo
 import nengo_dl
@@ -29,21 +30,27 @@ warnings.filterwarnings("ignore", message="No GPU", module="nengo_dl")
 random.seed(SEED)
 np.random.seed(SEED)
 
-def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
+def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, start_idx, end_idx):
   """
   Doest NengoLoihi test of models with MaxPooling implemented by MAX joinOp method.
 
   Args:
     inpt_shape <(int, int, int)>: A tuple of Image shape with channels_first order.
     num_clss <int>: Number of test classes.
+    start_idx <int>: The start index (inclusive) of the test dataset.
+    end_idx <int>: The end index (exclusive) of the test dataset.
+
+  Returns:
+    float, np.ndarray: Test Accuracy, Test class predictions (e.g. [7, 1, ..])
   """
   log.INFO("Getting the NengoDL model...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=False, include_non_max_pool_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
-  _, _, test_x, test_y = get_exp_dataset(nloihi_cfg["dataset"])
-  # Flatten `test_x`: (10000, 1, 784) for MNIST.
+  _, _, test_x, test_y = get_exp_dataset(
+      nloihi_cfg["dataset"], start_idx=start_idx, end_idx=end_idx)
+  # Flatten `test_x`.
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
   pres_time = nloihi_cfg["test_mode"]["n_steps"] * 0.001 # Convert to ms.
 
@@ -123,7 +130,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       max_join_op_ens_list.append(max_join_op_ens)
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
       ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-          (1, rows, cols), (num_chnls, rows, cols))
+          #(1, rows, cols), (num_chnls, rows, cols))
+          (16, 8, 8), (num_chnls, rows, cols))
 
       ######### CONNECT THE PREV ENS/CONV TO MAX_JOINOP_ENSEMBLE #########
       nengo.Connection(
@@ -160,9 +168,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       ndl_model.net._connections.remove(conn_from_max_to_nconv)
       ndl_model.net._nodes.remove(conn_from_pconv_to_max.post_obj)
 
-  log.INFO("All connections made. Now checking the new connections (in log)...")
-  for conn in ndl_model.net._connections:
-    log.INFO("Connection: {} | Synapse: {}".format(conn, conn.synapse))
+  #log.INFO("All connections made. Now checking the new connections (in log)...")
+  #for conn in ndl_model.net._connections:
+  #  log.INFO("Connection: {} | Synapse: {}".format(conn, conn.synapse))
 
   ############### SET THE BLOCK SHAPES ON LOIHI NEUROCORES #####################
   # Only the intermediate Conv layers and Dense layers run on Loihi, the Input
@@ -201,10 +209,14 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
   log.INFO("Loihi Accuracy with Model: %s is: %s"
            % (tf_cfg["tf_model"]["name"], correct))
   log.INFO("*"*100)
+  return correct, loihi_predictions
 
-def nengo_loihi_test():
+def nengo_loihi_test(start):
   """
   Does a variety of NengoLoihi test of TF models. Runs the model on Loihi Boards.
+
+  Args:
+    start <int>: The start batch number of the test dataset.
   """
   log.INFO("TF CONFIG: %s" % tf_cfg)
   log.INFO("NENGO-LOIHI CONFIG: %s" % nloihi_cfg)
@@ -214,16 +226,49 @@ def nengo_loihi_test():
   if nloihi_cfg["dataset"] == MNIST:
     inpt_shape = (1, 28, 28)
     num_clss = 10
+    num_test_imgs = 10000
+  elif nloihi_cfg["dataset"] == CIFAR10:
+    inpt_shape = (3, 32, 32)
+    num_clss = 10
+    num_test_imgs = 10000
   ###############################################################################
 
+  acc_per_batch_list = []
   log.INFO("*"*100)
   log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
-  _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss)
+
+  while True:
+    log.INFO("Testing for start batch: %s" % start)
+    start_idx = start*nloihi_cfg["test_mode"]["n_test"]
+    end_idx = (start+1) * nloihi_cfg["test_mode"]["n_test"]
+
+    acc, loihi_batch_preds = _do_nengo_loihi_MAX_joinOP_MaxPooling(
+        inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx)
+    acc_per_batch_list.append(acc)
+    # Dump the accuracy result for the current batch.
+    np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
+            "/Acc_and_preds_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
+            (acc, loihi_batch_preds))
+
+    log.INFO("Batch: [%s, %s) Done!" % (start_idx, end_idx))
+    start += 1
+    log.INFO("Up till batch %s, Mean Accuracy so far: %s" % (
+              start, np.mean(acc_per_batch_list)))
+    if end_idx == num_test_imgs:
+      log.INFO("Infernce over all test images done.")
+      break
+
+    if start==1: # To check for a single run overs MODELs.
+      break
 
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--start", type=int, required=True, help="Batch start #?")
+  args = parser.parse_args()
+
   log.configure_log_handler(
-    "%s_sfr_%s_n_steps_%s_synapse_%s_timestamp_%s.log" % (
+    "%s_start_%s_sfr_%s_n_steps_%s_synapse_%s_timestamp_%s.log" % (
     nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] + "_nengo_loihi_test_",
-    nloihi_cfg["test_mode"]["sfr"], nloihi_cfg["test_mode"]["n_steps"],
+    args.start, nloihi_cfg["test_mode"]["sfr"], nloihi_cfg["test_mode"]["n_steps"],
     nloihi_cfg["test_mode"]["synapse"], datetime.datetime.now()))
-  nengo_loihi_test()
+  nengo_loihi_test(args.start)

@@ -26,20 +26,22 @@ def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens):
   # Get the blocks (which can be many depending on how large the Ensemble `ens`
   # is and in how many blocks is it broken).
   blocks = loihi_sim.model.objs[ens]
+  log.INFO("Number of (in and out) Blocks for Ensemble %s are: %s and %s."
+            % (ens, len(blocks["in"]), len(blocks["out"])))
   for block in blocks["in"]:
     in_chip_idx, in_core_idx, in_block_idx, in_compartment_idxs, _ = (
         board.find_block(block))
     nxsdk_core = nxsdk_board.n2Chips[in_chip_idx].n2CoresAsList[in_core_idx]
     # Set the cxProfileCfg in nxsdk_core. Leave vthProfileCfg unchanged.
-    log.INFO("For Core Index: {}, vthProfileCfg is: {}".format(
-        in_core_idx, nxsdk_core.vthProfileCfg[0].staticCfg))
-    log.INFO("Before setting the cxProfileCfgs...")
-    log.INFO("For Core Index: {}, cxProfileCfg[0] is: {}".format(
-        in_core_idx, nxsdk_core.cxProfileCfg[0]))
-    log.INFO("For Core Index: {}, cxProfileCfg[1] is: {}".format(
-        in_core_idx, nxsdk_core.cxProfileCfg[1]))
-    log.INFO("For Core Index: {}, cxProfileCfg[2] is: {}".format(
-        in_core_idx, nxsdk_core.cxProfileCfg[2]))
+    #log.INFO("For Core Index: {}, vthProfileCfg is: {}".format(
+    #    in_core_idx, nxsdk_core.vthProfileCfg[0].staticCfg))
+    #log.INFO("Before setting the cxProfileCfgs...")
+    #log.INFO("For Core Index: {}, cxProfileCfg[0] is: {}".format(
+    #    in_core_idx, nxsdk_core.cxProfileCfg[0]))
+    #log.INFO("For Core Index: {}, cxProfileCfg[1] is: {}".format(
+    #    in_core_idx, nxsdk_core.cxProfileCfg[1]))
+    #log.INFO("For Core Index: {}, cxProfileCfg[2] is: {}".format(
+    #    in_core_idx, nxsdk_core.cxProfileCfg[2]))
 
     # Set the cxProfileCfg[0] as the leaf node's profile with `stackOut=3` =>
     # it pushes the current U to the top of the stack.
@@ -58,13 +60,13 @@ def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens):
     nxsdk_core.cxProfileCfg[2].configure(
         stackIn=2, joinOp=2, decayU=nxsdk_core.cxProfileCfg[0].decayU)
 
-    log.INFO("After setting the cxProfileCfgs...")
-    log.INFO("For Core Index: {}, cxProfileCfg[0] is: {}".format(
-        in_core_idx, nxsdk_core.cxProfileCfg[0]))
-    log.INFO("For Core Index: {}, cxProfileCfg[1] is: {}".format(
-        in_core_idx, nxsdk_core.cxProfileCfg[1]))
-    log.INFO("For Core Index: {}, cxProfileCfg[2] is: {}".format(
-        in_core_idx, nxsdk_core.cxProfileCfg[2]))
+    #log.INFO("After setting the cxProfileCfgs...")
+    #log.INFO("For Core Index: {}, cxProfileCfg[0] is: {}".format(
+    #    in_core_idx, nxsdk_core.cxProfileCfg[0]))
+    #log.INFO("For Core Index: {}, cxProfileCfg[1] is: {}".format(
+    #    in_core_idx, nxsdk_core.cxProfileCfg[1]))
+    #log.INFO("For Core Index: {}, cxProfileCfg[2] is: {}".format(
+    #    in_core_idx, nxsdk_core.cxProfileCfg[2]))
 
     # Set the compartments now.
     # Since the incoming connection from the previous Conv layer already as the
