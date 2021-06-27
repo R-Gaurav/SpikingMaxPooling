@@ -20,7 +20,7 @@ from utils.consts.model_consts import (
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_2
+model = MODEL_1
 dataset = MNIST # One of MNIST, CIFAR10
 sfr = 100 # Only for NengoDL. For NengoLoihi, it is set separately.
 

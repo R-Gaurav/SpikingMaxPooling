@@ -43,9 +43,6 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
       max_to_avg_pool=False, include_non_max_pool_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(nloihi_cfg["dataset"])
-  #RG: Set from which image to start testing.
-  # test_x, test_y = test_x[4:7], test_y[4:7] # 0:3, 3:6, 6:9 works with 40timesteps.
-  # 0:3, 3:6 doesn't work with 60 timesteps, 6:9 works with 60 timesteps.
   # Flatten `test_x`: (10000, 1, 784) for MNIST.
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
   pres_time = nloihi_cfg["test_mode"]["n_steps"] * 0.001 # Convert to ms.
@@ -133,7 +130,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss):
           conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_join_op_ens.neurons,
           transform=None, #conn_from_pconv_to_max.transform, # NoTransform.
-          synapse=conn_from_pconv_to_max.synapse, # None => Feed Spikes to JoinOp Ens.
+          # TODO: Remove the following.
+          #synapse=conn_from_pconv_to_max.synapse, # Here synapse is 0.005.
+          synapse=None, # Feed Spikes to JoinOp Ens instead of filtered signal.
           function=conn_from_pconv_to_max.function # None.
       )
 
