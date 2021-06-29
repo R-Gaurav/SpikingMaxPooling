@@ -285,6 +285,8 @@ def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
       loihi_predictions == np.argmax(
       test_y[:nloihi_cfg["test_mode"]["n_test"]], axis=-1))
   log.INFO("AvgPooling based Loihi Accuracy with Model: %s is: %s"
+  correct = 100 * np.mean(loihi_predictions == np.argmax(test_y, axis=-1))
+  log.INFO("Loihi Accuracy with Model: %s is: %s"
            % (tf_cfg["tf_model"]["name"], correct))
   log.INFO("*"*100)
   return correct, loihi_predictions
