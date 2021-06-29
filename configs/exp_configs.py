@@ -20,7 +20,7 @@ from utils.consts.model_consts import (
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_1
+model = MODEL_2
 dataset = MNIST # One of MNIST, CIFAR10
 sfr = 100 # Only for NengoDL. For NengoLoihi, it is set separately.
 
@@ -41,8 +41,8 @@ nengo_loihi_cfg = {
   "trained_model_params": (
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
-    "n_steps": 40, # in milliseconds.
-    "n_test": 250, # Number of images to be tested.
+    "n_steps": 50, # in milliseconds.
+    "n_test": 20, # Number of images to be tested.
     "scale": 0.9, # Scaling parameter of the output of root neurons. (MODEL_1)
     # "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_2)
     ################# WITH MODEL_1 and MNIST ###########################

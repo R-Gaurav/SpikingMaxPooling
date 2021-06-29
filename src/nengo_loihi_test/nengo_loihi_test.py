@@ -130,8 +130,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, start_idx, end_i
       max_join_op_ens_list.append(max_join_op_ens)
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
       ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-          #(1, rows, cols), (num_chnls, rows, cols))
-          (16, 8, 8), (num_chnls, rows, cols))
+          (1, rows, cols), (num_chnls, rows, cols)) # Results in 100% acc in 40 n_steps in MODEL_2.
+          #(16, 8, 8), (num_chnls, rows, cols)) # Results is 95% acc in 40 and 50 n_steps in MODEL_2.
 
       ######### CONNECT THE PREV ENS/CONV TO MAX_JOINOP_ENSEMBLE #########
       nengo.Connection(
