@@ -43,7 +43,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, start_idx, end_i
   Returns:
     float, np.ndarray: Test Accuracy, Test class predictions (e.g. [7, 1, ..])
   """
-  log.INFO("Getting the NengoDL model...")
+  log.INFO("Getting the NengoDL model for MAX joinOp based MaxPooling...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=False, include_non_max_pool_probes=False)
@@ -206,7 +206,85 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, start_idx, end_i
   correct = 100 * np.mean(
       loihi_predictions == np.argmax(
       test_y[:nloihi_cfg["test_mode"]["n_test"]], axis=-1))
-  log.INFO("Loihi Accuracy with Model: %s is: %s"
+  log.INFO("MAX joinOp based Loihi Accuracy with Model: %s is: %s"
+           % (tf_cfg["tf_model"]["name"], correct))
+  log.INFO("*"*100)
+  return correct, loihi_predictions
+
+def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
+  """
+  Does NengoLoihi test of models with AveragePooling layers.
+
+  Args:
+    inpt_shape <(int, int, int)>: A tuple of Image shape with channels_first order.
+    num_clss <int>: Number of test classes.
+    start_idx <int>: The start index (inclusive) of the test dataset.
+    end_idx <int>: The end index (exclusive) of the test dataset.
+
+  """
+  log.INFO("Getting the NengoDL model for AveragePooling spiking CNN...")
+  ndl_model, ngo_probes_lst = get_nengo_dl_model(
+      inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
+      max_to_avg_pool=False, include_non_max_pool_probes=False)
+  log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
+  _, _, test_x, test_y = get_exp_dataset(
+      nloihi_cfg["dataset"], start_idx=start_idx, end_idx=end_idx)
+
+  # Flatten `test_x`.
+  test_x = test_x.reshape((test_x.shape[0], 1, -1))
+  pres_time = nloihi_cfg["test_mode"]["n_steps"] * 0.001 # Convert to ms.
+
+  log.INFO("Loading the trained Params: %s" % nloihi_cfg["trained_model_params"])
+  nengo_input, nengo_output = ngo_probes_lst[0], ngo_probes_lst[-1]
+  # Build the Network, load the trained weights, save to network.
+  with nengo_dl.Simulator(ndl_model.net) as ndl_sim:
+    ndl_sim.load_params(nloihi_cfg["trained_model_params"]+ "/ndl_trained_params")
+    ndl_sim.freeze_params(ndl_model.net)
+
+  log.INFO("Configuring the network...")
+  with ndl_model.net:
+    nengo_input.output = nengo.processes.PresentInput(
+        test_x, presentation_time=pres_time)
+    nengo_loihi.add_params(ndl_model.net) # Allow on_chip to be set for Ensembles.
+    # In the TF model, the first Conv layer (immediately after the Input layer)
+    # is responsible to converting images to spikes, therefore set it to run Off-Chip.
+    ndl_model.net.config[
+        ndl_model.layers[ndl_model.model.layers[1]].ensemble].on_chip = False
+
+  ############### SET THE BLOCK SHAPES ON LOIHI NEUROCORES #####################
+  # Only the intermediate Conv layers and Dense layers run on Loihi, the Input
+  # layer, first Conv layer (to convert input to spikes) run off-chip, and the
+  # last Dense layer (to collect class prediction scores/logits) runs off-chip.
+  bls_dict, i = nloihi_cfg["layer_blockshapes"][tf_cfg["tf_model"]["name"]], 0
+  with ndl_model.net:
+    # Exclude the Conv layer at index 1 since it runs off-chip to create spikes.
+    for layer in ndl_model.model.layers[2:-1]:
+      if layer.name.startswith("conv"):
+        conv_shape = tuple(layer.output.shape[1:])
+        if np.prod(conv_shape) <= 1024:
+          continue
+        ndl_model.net.config[
+            ndl_model.layers[layer].ensemble].block_shape = (
+            nengo_loihi.BlockShape(bls_dict["conv2d_%s" % i], conv_shape))
+        i+=1
+      # For the intermediate "Dense" layers, they are already small Ensembles
+      # with number of neurons less than 1024, so no need to partition them.
+
+  ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
+  #with nengo_loihi.Simulator(ndl_model.net, remove_passthrough=False) as loihi_sim:
+  with nengo_loihi.Simulator(ndl_model.net) as loihi_sim:
+    loihi_sim.run(nloihi_cfg["test_mode"]["n_test"] * pres_time)
+
+  # Get the output (last timestep of each presentation period)
+  pres_steps = int(round(pres_time / loihi_sim.dt))
+  output = loihi_sim.data[nengo_output][pres_steps-1 :: pres_steps]
+
+  # Compute Loihi Accuracy.
+  loihi_predictions = np.argmax(output, axis=-1)
+  correct = 100 * np.mean(
+      loihi_predictions == np.argmax(
+      test_y[:nloihi_cfg["test_mode"]["n_test"]], axis=-1))
+  log.INFO("AvgPooling based Loihi Accuracy with Model: %s is: %s"
            % (tf_cfg["tf_model"]["name"], correct))
   log.INFO("*"*100)
   return correct, loihi_predictions
@@ -235,15 +313,21 @@ def nengo_loihi_test(start):
 
   acc_per_batch_list = []
   log.INFO("*"*100)
-  log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
 
   while True:
     log.INFO("Testing for start batch: %s" % start)
     start_idx = start*nloihi_cfg["test_mode"]["n_test"]
     end_idx = (start+1) * nloihi_cfg["test_mode"]["n_test"]
 
-    acc, loihi_batch_preds = _do_nengo_loihi_MAX_joinOP_MaxPooling(
-        inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx)
+    if tf_cfg["tf_model"]["name"].endswith("ap"):
+      log.INFO("Testing the NengoLoihi model in AveragePooling mode...")
+      acc, loihi_batch_preds = _do_nengo_loihi_average_pooling(
+          inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx)
+    else:
+      log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
+      acc, loihi_batch_preds = _do_nengo_loihi_MAX_joinOP_MaxPooling(
+          inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx)
+
     acc_per_batch_list.append(acc)
     # Dump the accuracy result for the current batch.
     np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
@@ -251,9 +335,9 @@ def nengo_loihi_test(start):
             (acc, loihi_batch_preds))
 
     log.INFO("Batch: [%s, %s) Done!" % (start_idx, end_idx))
-    start += 1
     log.INFO("Up till batch %s, Mean Accuracy so far: %s" % (
               start, np.mean(acc_per_batch_list)))
+    start += 1
     if end_idx == num_test_imgs:
       log.INFO("Infernce over all test images done.")
       break

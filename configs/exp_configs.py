@@ -9,7 +9,8 @@ import pathlib
 from utils.consts.dir_consts import EXP_OTPT_DIR
 from utils.consts.exp_consts import MNIST, CIFAR10
 from utils.consts.model_consts import (
-    MODEL_1, MODEL_2, MODEL_3, MODEL_4, MODEL_5, MODEL_6, MODEL_7)
+    MODEL_1, MODEL_2, MODEL_3, MODEL_4, MODEL_5, MODEL_6, MODEL_7,
+    MODEL_1_AP, MODEL_2_AP)
 
 # The TF train/test and Nengo-DL test variations are only with `model` and
 # `dataset`, however, in case of Nengo-DL test, one can include variations with
@@ -20,7 +21,7 @@ from utils.consts.model_consts import (
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_1
+model = MODEL_2_AP
 dataset = MNIST # One of MNIST, CIFAR10
 sfr = 100 # Only for NengoDL. For NengoLoihi, it is set separately.
 
@@ -71,6 +72,11 @@ nengo_loihi_cfg = {
       "conv2d_1": (8, 11, 11),
       "conv2d_2": (24, 3, 3)
     },
+    "model_2_ap": {
+      "conv2d_0": (1, 26, 26),
+      "conv2d_1": (8, 11, 11),
+      "conv2d_2": (24, 3, 3)
+    },
     "model_7": {
       "conv2d_0": (16, 8, 8), #(1, 30, 30),
       "conv2d_1": (1, 28, 28),
@@ -93,7 +99,7 @@ nengo_dl_cfg = {
     "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 30, # 80 required for a deeper MODEL_7
+    "n_steps": 40, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"

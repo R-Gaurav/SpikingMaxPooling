@@ -2,6 +2,7 @@ import nengo
 import nengo_loihi
 
 from utils.base_utils import log
+from utils.consts.exp_consts import SEED
 
 def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens):
   """
@@ -85,3 +86,86 @@ def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens):
       nxsdk_core.cxCfg[c_idx+2].configure(cxProfile=1, vthProfile=0)
       # Set a root node/compartment to output spikes corresponding to MAX input.
       nxsdk_core.cxCfg[c_idx+3].configure(cxProfile=2, vthProfile=0)
+
+def get_loihi_adapted_avam_net_for_2x2_max_pooling(
+    seed=SEED, max_rate=1000, radius=0.5, sf=1, do_max=True, synapse=None):
+  """
+  Returns a Loihi adapted network for absolute value based associative max pooling.
+
+  Args:
+    seed <int>: Any arbitrary seed value.
+    max_rate <int>: Max Firing rate of the neurons.
+    radius <int>: Value at which Maximum Firing rate occurs (
+                  i.e. the representational radius)
+    sf <int>: The scale factor.
+    do_max <bool>: Do MaxPooling if True else do AvgPooling.
+    synapse <float>: Synapic time constant.
+  """
+  with nengo.Network(seed=seed) as net:
+    net.inputs = nengo.Node(size_in=4) # 4 dimensional input for 2x2 MaxPooling.
+
+    def _get_ensemble():
+      ens =  nengo.Ensemble(
+          n_neurons=2, dimensions=1, encoders=[[1], [-1]], interceps=[0, 0],
+          max_rate=[max_rate, max_rate], radius=radius,
+          neuron_type=nengo_loihi.neurons.SpikingRectifiedLinear())
+      return ens
+
+    ens_12 = _get_ensemble() # Ensemble for max(a, b).
+    ens_34 = _get_ensemble() # Ensemble for max(c, d).
+    ens_1234 = _get_ensemble() # Ensemble for max(max(a, b), max(c, d)).
+
+    # Intermediate passthrough nodes for summing and outputting the result.
+    node_12 = nengo.Node(size_in=1) # For max(a, b).
+    node_34 = nengo.Node(size_in=1) # For max(a, b).
+    net.output = nengo.Node(size_in=1) # For max(max(a, b), max(c, d)).
+
+    ############################################################################
+    # Calculate max(a, b) = (a+b)/2 + |a-b|/2.
+    # Calculate (a+b)/2.
+    nengo.Connection(net.inputs[0], node_12, synapse=None, transform=sf/2)
+    nengo.Connection(net.inputs[1], node_12, synapse=None, transform=sf/2)
+
+    if do_max:
+      # Calculate |a-b|/2.
+      nengo.Connection(net.inputs[0], ens_12, synapse=None, transform=sf/2)
+      nengo.Connection(net.inputs[1], ens_12, synapse=None, transform=-sf/2)
+      nengo.Connection(
+          ens_12.neurons[0], node_12, synapse=synapse, transform=radius/max_rate)
+      nengo.Connection(
+          ens_12.neurons[1], node_12, synapse=synapse, transform=radius/max_rate)
+    ############################################################################
+
+    ############################################################################
+    # Calculate max(c, d) = (c+d)/2 + |c-d|/2.
+    # Calculate (c+d)/2.
+    nengo.Connection(net.inputs[2], node_34, synapse=None, transform=sf/2)
+    nengo.Connection(net.inputs[3], node_34, synapse=None, transform=sf/2)
+
+    if do_max:
+      # Calculate |c-d|/2.
+      nengo.Connection(net.inputs[2], ens_34, synapse=None, transform=sf/2)
+      nengo.Connection(net.inputs[3], ens_34, synapse=None, transform=-sf/2)
+      nengo.Connection(
+          ens_34.neurons[0], node_34, synapse=synapse, transform=radius/max_rate)
+      nengo.Connection(
+          ens_34.neurons[1], node_34, synapse=synapse, transform=radius/max_rate)
+    ############################################################################
+
+    ############################################################################
+    # Calculate max(a, b, c, d) = max(max(a, b), max(c, d)).
+    # Calculate (node_12 + node_34)/2.
+    nengo.Connection(node_12, net.output, synapse=synapse, transform=sf/2)
+    nengo.Connection(node_34, net.output, synapse=synapse, transform=sf/2)
+
+    if do_max:
+      # Calculate |node_12 - node_34|/2.
+      nengo.Connection(node_12, ens_1234, synapse=synapse, transform=sf/2)
+      nengo.Connection(node_34, ens_1234, synapse=synapse, transform=-sf/2)
+      nengo.Connection(ens_1234.neurons[0], net.output, synapse=synapse,
+                       transform=radius/max_rate)
+      nengo.Connection(ens_1234.neurons[1], net.output, synapse=synapse,
+                       transform=radius/max_rate)
+    ############################################################################
+
+  return net

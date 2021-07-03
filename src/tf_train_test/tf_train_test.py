@@ -54,11 +54,11 @@ def tf_train_test():
       optimizer=tf.optimizers.Adam(tf_cfg["lr"]),
       loss=tf.losses.CategoricalCrossentropy(from_logits=True),
       metrics=[tf.metrics.categorical_accuracy])
-  tf_model.fit(train_idg.flow(
-               train_x, train_y, seed=SEED, batch_size=tf_cfg["batch_size"]),
-               batch_size=tf_cfg["batch_size"], epochs=tf_cfg["epochs"])
-  #tf_model.fit(train_x, train_y,
+  #tf_model.fit(train_idg.flow(
+  #             train_x, train_y, seed=SEED, batch_size=tf_cfg["batch_size"]),
   #             batch_size=tf_cfg["batch_size"], epochs=tf_cfg["epochs"])
+  tf_model.fit(train_x, train_y,
+               batch_size=tf_cfg["batch_size"], epochs=tf_cfg["epochs"])
   log.INFO("Training done. Saving the model weights...")
   tf_model.save_weights(tf_cfg["tf_wts_otpt_dir"]+"/weights")
 

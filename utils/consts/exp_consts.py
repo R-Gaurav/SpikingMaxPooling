@@ -2,7 +2,7 @@
 # Author: Ramashish Gaurav
 #
 
-SEED = 90
+SEED = 0
 MNIST = "mnist"
 CIFAR10 = "cifar10"
 NUM_X = 4 # Default number of elements in the MaxPooling pool matrix.

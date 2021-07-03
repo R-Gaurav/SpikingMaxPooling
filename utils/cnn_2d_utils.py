@@ -47,6 +47,24 @@ def _get_max_pool_block(block, layer_cfg, layer_objs_lst):
 
   return max_pool
 
+def _get_avg_pool_block(block, layer_cfg, layer_objs_lst):
+  """
+  Returns an AveragePool block.
+
+  Args:
+    block <tf.Tensor>: A TF Tensor object.
+    layer_cfg <namedtuple>: A named tuple of the layer configuration.
+    layer_objs_lst <[]>: A list of layer objects.
+  """
+  log.INFO("Layer name: {}".format(block.name))
+  log.INFO("Layer config: {}".format(layer_cfg))
+  avg_pool = tf.keras.layers.AveragePooling2D(
+      pool_size=layer_cfg.kernel_dims, padding="valid",
+      data_format=layer_cfg.data_format)(block)
+  layer_objs_lst.append(avg_pool)
+
+  return avg_pool
+
 def _get_dense_block(block, nn_dlyr, layer_objs_lst, actvn="relu"):
   """
   Returns a dense block.
@@ -91,6 +109,8 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
       x = _get_2d_cnn_block(x, layer, layer_objs_lst)
     elif layer.name == "MaxPool":
       x = _get_max_pool_block(x, layer, layer_objs_lst)
+    elif layer.name == "AvgPool":
+      x = _get_avg_pool_block(x, layer, layer_objs_lst)
   # Flatten
   # FIXME: Probable bug in Nengo-DL where data_format = "channels_last" in
   # Flatten layer results in garbage predictions.
