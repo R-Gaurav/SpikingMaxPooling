@@ -84,6 +84,20 @@ def _get_dense_block(block, nn_dlyr, layer_objs_lst, actvn="relu"):
 
   return dense
 
+def _get_dropout_block(block, dp_prob, layer_objs_lst):
+  """
+  Returns a Dropout block.
+
+  Args:
+    block <tf.Tensor>: A TF Tensor.
+    dp_porb <float>: The dropout probability.
+    layer_objs_lst <[]>: A list of layer objects.
+  """
+  dp_out = tf.keras.layers.Dropout(rate=dp_prob)(block)
+  layer_objs_lst.append(dp_out)
+
+  return dp_out
+
 def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
   """
   Returns a 2D CNN model.
@@ -111,6 +125,9 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
       x = _get_max_pool_block(x, layer, layer_objs_lst)
     elif layer.name == "AvgPool":
       x = _get_avg_pool_block(x, layer, layer_objs_lst)
+    elif layer.name == "Dropout":
+      # Dropout probability is layer.num_kernels.
+      x = _get_dropout_block(x, layer.num_kernels, layer_objs_lst)
   # Flatten
   # FIXME: Probable bug in Nengo-DL where data_format = "channels_last" in
   # Flatten layer results in garbage predictions.
@@ -118,6 +135,8 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
   x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
   x = _get_dense_block(x, tf_cfg["nn_dlyr"], layer_objs_lst)
+  if model["name"] == "model_7":
+    x = _get_dropout_block(x, 0.5, layer_objs_lst)
   # Add the final output Dense block.
   # output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
   # Presence of "softmax" activation results in formation of `TensorNode` and
@@ -125,4 +144,28 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
   output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn=None)
 
   model = tf.keras.Model(inputs=inpt_lyr, outputs=output_lyr)
+  return model, layer_objs_lst
+
+def get_2d_cnn_model_without_dropouts(model):
+  """
+  Returns a copy of `model` which doesn't have Dropout layers.
+
+  Args:
+    model <tf.training.Model>: The TensorFlow based model.
+
+  Returns:
+    tf.training.Model, [tf.ops.Tensor]
+  """
+  layers = [lyr for lyr in model.layers]
+  x = layers[0].output
+  layer_objs_lst = []
+  layer_objs_lst.append(x)
+
+  for i in range(1, len(layers)):
+    if layers[i].name.startswith("dropout"):
+      continue
+    x = layers[i](x)
+    layer_objs_lst.append(x)
+
+  model = tf.keras.Model(inputs=layers[0].input, outputs=x)
   return model, layer_objs_lst

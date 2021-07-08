@@ -193,23 +193,34 @@ MODEL_7 = { # TF CIFAR10: Without Data Augmentation: 71% ACC. (32 EPOCHS)
   "name": "model_7",
   "layers": {
     "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1), data_format="channels_last"),
+
     "layer_2": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1), data_format="channels_last"),
     "layer_3": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1), data_format="channels_last"),
     "layer_4": Layer(name="MaxPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
-    "layer_5": Layer(name="Conv", num_kernels=64, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     data_format="channels_last"),
+    # num_kernels is Dropout Probability.
+    "layer_5": Layer(name="Dropout", num_kernels=0.2),
+
+
     "layer_6": Layer(name="Conv", num_kernels=64, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_7": Layer(name="MaxPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
-    "layer_8": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_9": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1), data_format="channels_last"),
+    "layer_7": Layer(name="Conv", num_kernels=64, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_last"),
+    "layer_8": Layer(name="MaxPool", kernel_dims=(2, 2),
+                     data_format="channels_last"),
+    # num_kernels is Dropout Probability.
+    "layer_9": Layer(name="Dropout", num_kernels=0.3),
+
+
+    "layer_10": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_last"),
+    "layer_11": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
+                     stride_dims=(1, 1), data_format="channels_last"),
+    # num_kernels is Dropout Probability.
+    "layer_12": Layer(name="Dropout", num_kernels=0.4),
   }
 }
 

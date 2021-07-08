@@ -5,3 +5,5 @@ utils/*/*/*.pyc
 runtime_outputs/*
 .nfs*
 nohop.out
+
+misc/Checking_Coversion_of_Dropout_and_BN_layers/*.npy

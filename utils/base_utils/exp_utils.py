@@ -375,6 +375,37 @@ def get_grouped_slices_2d_pooling(**kwargs):
 
   return grouped_slices
 
+def get_grouped_slices_2d_pooling_cl(**kwargs):
+  """
+  Returns grouped slices indices for channels last ordering, with all the other
+  expectations as mentioned above for channels first ordering.
+
+  Args:
+    kwargs <dict>:
+      pool_size <tuple>: (int, int) for 2D Pooling - (row, col) arrangement.
+      num_chnls <int>: Number of channels in the reshaped matrix.
+      rows <int>: Number of rows in the reshaped matrix.
+      cols <int>: Number of columns in the reshaped matrix.
+
+  Returns:
+    <[int]>
+  """
+  pool_size, num_chnls, rows, cols = (
+        kwargs["pool_size"], kwargs["num_chnls"], kwargs["rows"], kwargs["cols"])
+  matrix = np.arange(rows * cols * num_chnls).reshape((rows, cols, num_chnls))
+  grouped_slices = np.zeros(rows * cols * num_chnls, dtype=int)
+  start, slice_len = 0, np.prod(pool_size)
+
+  for chnl in range(num_chnls):
+    for row in range(rows//pool_size[0]):
+      for col in range(cols//pool_size[1]):
+        grouped_slices[start:start+slice_len] = (
+            matrix[row*pool_size[0]:row*pool_size[0]+pool_size[0],
+            col*pool_size[1]:col*pool_size[1]+pool_size[1], chnl]).flatten()
+        start += slice_len
+
+  return grouped_slices
+
 def get_isi_based_max_pooling_params(layers):
   """
   Populates ISI based MaxPooling experiemt parameters. That is: `MAX_POOL_MASK`,

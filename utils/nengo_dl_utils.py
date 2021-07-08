@@ -12,14 +12,15 @@ from focal_loss import SparseCategoricalFocalLoss
 
 from configs.exp_configs import nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
-from utils.cnn_2d_utils import get_2d_cnn_model
+from utils.cnn_2d_utils import get_2d_cnn_model, get_2d_cnn_model_without_dropouts
 from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
                                      NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
                                      MAX_POOL_MASK, NUM_X)
 
 def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
                        collect_probe_history=True, max_to_avg_pool=False,
-                       load_tf_trained_wts=False, include_non_max_pool_probes=True):
+                       load_tf_trained_wts=False, include_layer_probes=False,
+                       include_mp_layer_probes=False):
   """
   Returns the nengo_dl model.
 
@@ -33,8 +34,11 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
         history if True, else don't collect spikes.
     max_to_avg_pool <bool>: Set `max_to_avg_pool` in `Converter` to True or False.
     load_tf_trained_wts <bool>: Load TF trained weights if True else don't.
-    include_non_max_pool_probes <bool>: Collect the probe data of Non-MP layers
-                                        if True else just the input/output Probes.
+    include_layer_probes <bool>: Collect the probe data of Non-MP layers if True
+                                 else don't. Note: Setting it True doesn't collect
+                                 MP layers output, for which, flag below is used.
+    include_mp_layer_probes <bool>: Collect the probe data MP layers if True
+                                    else don't.
 
   Returns:
     nengo.Model, [Probes]
@@ -53,6 +57,8 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
     model.summary(print_fn=lambda x: f.write(x + "\n"))
 
   if mode=="test":
+    # Remove the Dropout Layers if present in the model and create a new model.
+    model, layer_objs_lst = get_2d_cnn_model_without_dropouts(model)
     test_cfg = ngo_cfg["test_mode"]
     if load_tf_trained_wts:
       log.INFO("Test Mode: Loading the TF trained weights in the model...")
@@ -107,12 +113,16 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
     if not collect_probe_history:
       nengo_dl.configure_settings(keep_history=False)
     nengo_dl.configure_settings(stateful=False)
-    if include_non_max_pool_probes:
+    if include_layer_probes:
       for lyr_obj in layer_objs_lst[1:-1]:
         # Skip the probes for MaxPooling layers as they won't be present in the
         # Associative-Max based SNN, else execution will error out.
         # TODO: Include it for other analysis though.
         if not lyr_obj.name.startswith("max_pooling"):
+          nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
+    if include_mp_layer_probes:
+      for lyr_obj in layer_objs_lst[1:-1]:
+        if lyr_obj.name.startswith("max_pooling"):
           nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
   # Set the probes on the Output layer of the Nengo-DL model.
   nengo_output = ndl_model.outputs[layer_objs_lst[-1]]

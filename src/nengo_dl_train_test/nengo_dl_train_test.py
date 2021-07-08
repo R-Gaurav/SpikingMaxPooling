@@ -39,9 +39,11 @@ def nengo_dl_train():
   if tf_cfg["dataset"] == MNIST:
     inpt_shape = (1, 28, 28)
     num_clss = 10
+    channels_first = True
   elif tf_cfg["dataset"] == CIFAR10:
-    inpt_shape = (3, 32, 32)
+    inpt_shape = (32, 32, 3)
     num_clss = 10
+    channels_first = False
   ##############################################################################
   log.INFO("Getting the NengoDL model to be trained...:")
   ndl_model, ndl_mdl_probes = get_nengo_dl_model(
@@ -71,7 +73,8 @@ def nengo_dl_train():
     #)
     for epoch in range(tf_cfg["epochs"]):
       log.INFO("Executing Epoch: %s ..." % epoch)
-      batches = get_batches_of_exp_dataset(ndl_cfg, is_test=False)
+      batches = get_batches_of_exp_dataset(
+            ndl_cfg, is_test=False, channels_first=channels_first)
       ndl_sim.fit(batches, epochs=1, steps_per_epoch=num_imgs // train_bs)
 
     log.INFO("Saving the trained model-parameters...")
@@ -87,25 +90,29 @@ def nengo_dl_test():
   if tf_cfg["dataset"] == MNIST:
     inpt_shape = (1, 28, 28)
     num_clss = 10
+    channels_first = True
   elif tf_cfg["dataset"] == CIFAR10:
-    inpt_shape = (3, 32, 32)
+    inpt_shape = (32, 32, 3)
     num_clss = 10
+    channels_first = False
 
   log.INFO("Getting the Nengo-DL model...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=False)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
-  test_batches = get_batches_of_exp_dataset(ndl_cfg, is_test=True)
+  test_batches = get_batches_of_exp_dataset(
+      ndl_cfg, is_test=True, channels_first=channels_first)
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
       progress_bar=False) as sim:
     sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
 
-    acc, n_test_imgs = 0, 0
+    acc, n_test_imgs, all_test_imgs_pred_clss = 0, 0, []
     for batch in test_batches:
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
+      all_test_imgs_pred_clss.extend(sim_data[ngo_probes_lst[-1]])
       for true_lbl, pred_lbl in zip(batch[1], sim_data[ngo_probes_lst[-1]]):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
@@ -115,6 +122,9 @@ def nengo_dl_test():
     log.INFO("Testing done! Writing test accuracy results in log...")
     log.INFO("Nengo-DL Test Accuracy: %s" % (acc/n_test_imgs))
     #TODO: Delete the `ndl_model` to reclaim GPU memory.
+    log.INFO("Saving test simulation class output results...")
+    np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/sim_clss_otpt",
+            np.array(all_test_imgs_pred_clss))
     log.INFO("*"*100)
 
 if __name__ == "__main__":

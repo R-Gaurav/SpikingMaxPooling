@@ -21,16 +21,16 @@ from utils.consts.model_consts import (
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_2_AP
-dataset = MNIST # One of MNIST, CIFAR10
-sfr = 100 # Only for NengoDL. For NengoLoihi, it is set separately.
+model = MODEL_7
+dataset = CIFAR10 # One of MNIST, CIFAR10
+sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
   "batch_size": 100,
   "dataset": dataset,
-  "epochs": 12 if dataset == MNIST else 64,
-  "lr": 5e-3,
-  "nn_dlyr": 64,
+  "epochs": 12 if dataset == MNIST else 160,
+  "lr": 1e-3,
+  "nn_dlyr": 128,
   "tf_model": model,
   "tf_res_otpt_dir": EXP_OTPT_DIR + "/%s/%s/tf_otpts/" % (dataset, model["name"]),
   "tf_wts_otpt_dir": (
@@ -78,12 +78,12 @@ nengo_loihi_cfg = {
       "conv2d_2": (24, 3, 3)
     },
     "model_7": {
-      "conv2d_0": (16, 8, 8), #(1, 30, 30),
-      "conv2d_1": (1, 28, 28),
-      "conv2d_2": (4, 12, 12),
-      "conv2d_3": (8, 10, 10),
-      "conv2d_4": (8, 8, 8),
-      "conv2d_5": (4, 4, 4),
+      "conv2d_0": (8, 8, 16), #(1, 30, 30),
+      "conv2d_1": (28, 28, 1),
+      "conv2d_2": (12, 12, 4),
+      "conv2d_3": (10, 10, 8),
+      "conv2d_4": (4, 4, 64),
+      "conv2d_5": (4, 4, 64),
     }
   },
 }
@@ -99,7 +99,7 @@ nengo_dl_cfg = {
     "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 40, # 80 required for a deeper MODEL_7
+    "n_steps": 120, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"

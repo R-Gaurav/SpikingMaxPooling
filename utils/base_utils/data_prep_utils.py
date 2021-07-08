@@ -57,7 +57,7 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None):
   else:
     return train_x, train_y, test_x, test_y
 
-def get_batches_of_exp_dataset(ndl_cfg, is_test=True):
+def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True):
   """
   Returns the batches of training or test data.
 
@@ -71,7 +71,8 @@ def get_batches_of_exp_dataset(ndl_cfg, is_test=True):
   log.INFO("Getting Nengo-DL data for dataset: %s" % ndl_cfg["dataset"])
   if is_test:
     batch_size = ndl_cfg["test_mode"]["test_batch_size"]
-    _, _, imgs, clss = get_exp_dataset(ndl_cfg["dataset"])
+    _, _, imgs, clss = get_exp_dataset(
+        ndl_cfg["dataset"], channels_first=channels_first)
     num_instances = imgs.shape[0]
     imgs = imgs.reshape((num_instances, 1, -1))
     tiled_imgs = np.tile(imgs, (1, ndl_cfg["test_mode"]["n_steps"], 1))
@@ -83,7 +84,8 @@ def get_batches_of_exp_dataset(ndl_cfg, is_test=True):
   else:
     assert ndl_cfg["train_mode"]["n_steps"] == 1
     batch_size = ndl_cfg["train_mode"]["train_batch_size"]
-    imgs, clss, _, _ = get_exp_dataset(ndl_cfg["dataset"])
+    imgs, clss, _, _ = get_exp_dataset(
+        ndl_cfg["dataset"], channels_first=channels_first)
     clss = clss.reshape((clss.shape[0], 1, -1))
     num_instances = imgs.shape[0]
     train_idg = tf.keras.preprocessing.image.ImageDataGenerator(
