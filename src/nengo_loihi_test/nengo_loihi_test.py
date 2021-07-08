@@ -30,7 +30,8 @@ warnings.filterwarnings("ignore", message="No GPU", module="nengo_dl")
 random.seed(SEED)
 np.random.seed(SEED)
 
-def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, start_idx, end_idx):
+def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
+                                          start_idx, end_idx):
   """
   Doest NengoLoihi test of models with MaxPooling implemented by MAX joinOp method.
 
@@ -49,7 +50,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, start_idx, end_i
       max_to_avg_pool=False, include_non_max_pool_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
-      nloihi_cfg["dataset"], start_idx=start_idx, end_idx=end_idx)
+      nloihi_cfg["dataset"], channels_first=channels_first, start_idx=start_idx,
+      end_idx=end_idx)
   # Flatten `test_x`.
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
   pres_time = nloihi_cfg["test_mode"]["n_steps"] * 0.001 # Convert to ms.
@@ -307,10 +309,12 @@ def nengo_loihi_test(start):
     inpt_shape = (1, 28, 28)
     num_clss = 10
     num_test_imgs = 10000
+    channels_first = True
   elif nloihi_cfg["dataset"] == CIFAR10:
-    inpt_shape = (3, 32, 32)
+    inpt_shape = (32, 32, 3)
     num_clss = 10
     num_test_imgs = 10000
+    channels_first = False
   ###############################################################################
 
   acc_per_batch_list = []
@@ -328,7 +332,8 @@ def nengo_loihi_test(start):
     else:
       log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
       acc, loihi_batch_preds = _do_nengo_loihi_MAX_joinOP_MaxPooling(
-          inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx)
+          inpt_shape, num_clss, channels_first=channels_first,
+          start_idx=start_idx, end_idx=end_idx)
 
     acc_per_batch_list.append(acc)
     # Dump the accuracy result for the current batch.
