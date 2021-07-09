@@ -74,9 +74,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
     # TODO: Check if on_chip is set True for the new MAX joinOp Ensemble?
     # In the TF model, the first Conv layer (immediately after the Input layer)
     # is responsible to converting images to spikes, therefore set it to run Off-Chip.
-    print("RG: NDL MOdel layers: ", ndl_model.model.layers[1])
-    print("RG: ", [key for key in ndl_model.layers.keys()])
-    print("RG: NDL Model net config keys: ", ndl_model.net.config)
+    #print("RG: NDL MOdel layers: ", ndl_model.model.layers[1])
+    #print("RG: ", [key for key in ndl_model.layers.keys()])
+    #print("RG: NDL Model net config keys: ", ndl_model.net.config)
     ndl_model.net.config[
         ndl_model.layers[ndl_model.model.layers[1]].ensemble].on_chip = False
 
@@ -142,7 +142,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
       max_join_op_ens_list.append(max_join_op_ens)
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
       ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-          (1, rows, cols), (num_chnls, rows, cols)) # Results in 100% acc in 40 n_steps in MODEL_2.
+          (rows, cols, 1), (rows, cols, num_chnls)) # Results in 100% acc in 40 n_steps in MODEL_2.
+          #(1, rows, cols), (num_chnls, rows, cols)) # Results in 100% acc in 40 n_steps in MODEL_2.
           #(16, 8, 8), (num_chnls, rows, cols)) # Results is 95% acc in 40 and 50 n_steps in MODEL_2.
 
       ######### CONNECT THE PREV ENS/CONV TO MAX_JOINOP_ENSEMBLE #########
@@ -205,6 +206,22 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
 
   ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
   with nengo_loihi.Simulator(ndl_model.net, target="loihi") as loihi_sim:
+
+  ##############################################################################
+    for ens in ndl_model.net.all_ensembles:
+      print("$"*80)
+      print("RG: ", ens)
+      #ens = ndl_model.layers[ndl_model.model.layers[1]].ensemble
+      blocks = loihi_sim.model.objs[ens]
+      log.INFO("Number of (in and out) Blocks for Ensemble %s are: %s and %s."
+               % (ens, len(blocks["in"]), len(blocks["out"])))
+      for block in blocks["in"]:
+        in_chip_idx, in_core_idx, in_block_idx, in_compartment_idxs, _ = (
+            board.find_block(block))
+        print("Ens: %s, block: %s, chip_idx: %s, core_idx: %s"
+              % (ens, block, in_chip_idx, in_core_idx))
+      print("$"*80)
+  ##############################################################################
     for max_join_op_ens in max_join_op_ens_list:
       configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens)
     loihi_sim.run(nloihi_cfg["test_mode"]["n_test"] * pres_time)
