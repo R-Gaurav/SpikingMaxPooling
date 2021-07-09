@@ -12,7 +12,7 @@ from focal_loss import SparseCategoricalFocalLoss
 
 from configs.exp_configs import nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
-from utils.cnn_2d_utils import get_2d_cnn_model, get_2d_cnn_model_without_dropouts
+from utils.cnn_2d_utils import get_2d_cnn_model
 from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
                                      NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI,
                                      MAX_POOL_MASK, NUM_X)
@@ -59,8 +59,6 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
     model.summary(print_fn=lambda x: f.write(x + "\n"))
 
   if mode == "test":
-    # Remove the Dropout Layers if present in the model and create a new model.
-    # model, layer_objs_lst = get_2d_cnn_model_without_dropouts(model)
     test_cfg = ngo_cfg["test_mode"]
     if load_tf_trained_wts:
       log.INFO("Test Mode: Loading the TF trained weights in the model...")
