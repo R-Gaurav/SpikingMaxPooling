@@ -10,9 +10,11 @@ import nengo_dl
 import numpy as np
 import random
 import tensorflow as tf
+import pickle
 
 import _init_paths
 
+from collections import defaultdict
 from configs.exp_configs import tf_exp_cfg as tf_cfg, nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import (
@@ -47,7 +49,8 @@ def nengo_dl_train():
   ##############################################################################
   log.INFO("Getting the NengoDL model to be trained...:")
   ndl_model, ndl_mdl_probes = get_nengo_dl_model(
-      inpt_shape, tf_cfg, ndl_cfg, mode="train", num_clss=num_clss)
+      inpt_shape, tf_cfg, ndl_cfg, mode="train", num_clss=num_clss,
+      channels_first=channels_first)
   ndl_train_cfg = ndl_cfg["train_mode"]
   train_bs = ndl_train_cfg["train_batch_size"]
   # TODO: Is there a need to set the following? May be when training neuron is Spiking Neuron?
@@ -83,7 +86,7 @@ def nengo_dl_train():
 
   log.INFO("NengoDL Training Done!")
 
-def nengo_dl_test():
+def nengo_dl_test(n_test=None):
   """
   Does Nengo-DL testing with TensorNode MaxPooling.
   """
@@ -99,7 +102,8 @@ def nengo_dl_test():
   log.INFO("Getting the Nengo-DL model...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False)
+      max_to_avg_pool=False, channels_first=channels_first,
+      include_mp_layer_probes=True)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
       ndl_cfg, is_test=True, channels_first=channels_first)
@@ -109,22 +113,38 @@ def nengo_dl_test():
       progress_bar=False) as sim:
     sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
 
-    acc, n_test_imgs, all_test_imgs_pred_clss = 0, 0, []
+    acc, n_test_imgs, all_test_imgs_pred_clss, do_break = 0, 0, [], False
+    layer_probes_otpt = defaultdict(list)
+
     for batch in test_batches:
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
       all_test_imgs_pred_clss.extend(sim_data[ngo_probes_lst[-1]])
+      for probe in ngo_probes_lst[1:-1]:
+        layer_probes_otpt[probe.obj.label].extend(sim_data[probe])
       for true_lbl, pred_lbl in zip(batch[1], sim_data[ngo_probes_lst[-1]]):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
         n_test_imgs += 1
+        if n_test_imgs == n_test:
+          do_break=True
+          log.INFO("Done Testing: %s test images!" % n_test_imgs)
+          break
+      if do_break:
+        break
         # TODO: Collect the intermediate layers spike/synapsed output.
 
     log.INFO("Testing done! Writing test accuracy results in log...")
     log.INFO("Nengo-DL Test Accuracy: %s" % (acc/n_test_imgs))
     #TODO: Delete the `ndl_model` to reclaim GPU memory.
     log.INFO("Saving test simulation class output results...")
-    np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/sim_clss_otpt",
+    np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/sim_pred_clss_otpt",
             np.array(all_test_imgs_pred_clss))
+    log.INFO("Saving test simulation layer probes outputs...")
+    np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/sim_lyr_probes_otpt",
+            np.array(layer_probes_otpt))
+    #pickle.dump(layer_probes_otpt,
+    #            open(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+
+    #                 "/sim_lyr_probes_otpt", "wb"))
     log.INFO("*"*100)
 
 if __name__ == "__main__":
@@ -133,4 +153,4 @@ if __name__ == "__main__":
       ndl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"] + "_nengo_dl_train_",
       ndl_cfg["train_mode"]["sfr"], tf_cfg["epochs"], datetime.datetime.now()))
   #nengo_dl_train()
-  nengo_dl_test()
+  nengo_dl_test(n_test=1000)

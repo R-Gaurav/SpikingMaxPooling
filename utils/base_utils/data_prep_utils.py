@@ -90,7 +90,8 @@ def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True):
     num_instances = imgs.shape[0]
     train_idg = tf.keras.preprocessing.image.ImageDataGenerator(
         width_shift_range=0.1, height_shift_range=0.1, rotation_range=20,
-        horizontal_flip=True, data_format="channels_first")
+        horizontal_flip=True,
+        data_format="channels_first" if channels_first else "channels_last")
     train_idg.fit(imgs, seed=SEED)
 
     # nodes = ndl_model.net.all_nodes

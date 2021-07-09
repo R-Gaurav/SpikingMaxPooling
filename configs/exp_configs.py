@@ -21,14 +21,14 @@ from utils.consts.model_consts import (
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_7
+model = MODEL_1
 dataset = CIFAR10 # One of MNIST, CIFAR10
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
   "batch_size": 100,
   "dataset": dataset,
-  "epochs": 12 if dataset == MNIST else 160,
+  "epochs": 12 if dataset == MNIST else 32, #160,
   "lr": 1e-3,
   "nn_dlyr": 128,
   "tf_model": model,
@@ -42,7 +42,7 @@ nengo_loihi_cfg = {
   "trained_model_params": (
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
-    "n_steps": 120, # in milliseconds.
+    "n_steps": 50, # in milliseconds.
     "n_test": 20, # Number of images to be tested.
     "scale": 1, # Scaling parameter of the output of root neurons. (MODEL_1)
     # "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_2)
@@ -100,7 +100,7 @@ nengo_dl_cfg = {
     "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 150, # 80 required for a deeper MODEL_7
+    "n_steps": 50, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"

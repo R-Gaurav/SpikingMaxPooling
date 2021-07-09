@@ -29,13 +29,13 @@ MODEL_1 = {
   "name": "model_1",
   "layers": {
     "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1)), #, data_format="channels_first"),
     "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_3": Layer(name="MaxPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
+                     stride_dims=(1, 1)), #, data_format="channels_first"),
+    "layer_3": Layer(name="MaxPool", kernel_dims=(2, 2)),
+                     #data_format="channels_first"),
     "layer_4": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first")
+                     stride_dims=(1, 1)) #, data_format="channels_first")
   }
 }
 
@@ -44,13 +44,13 @@ MODEL_1_AP = {
   "name": "model_1_ap",
   "layers": {
     "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1)), #, data_format="channels_first"),
     "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_3": Layer(name="AvgPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
+                     stride_dims=(1, 1)), #, data_format="channels_first"),
+    "layer_3": Layer(name="AvgPool", kernel_dims=(2, 2)),
+                     #data_format="channels_first"),
     "layer_4": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first")
+                     stride_dims=(1, 1)), #data_format="channels_first")
   }
 }
 
@@ -65,17 +65,17 @@ MODEL_2 = {
   "name": "model_2",
   "layers": {
     "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1)), # data_format="channels_first"),
     "layer_2": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_3": Layer(name="MaxPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
+                     stride_dims=(1, 1)),# data_format="channels_first"),
+    "layer_3": Layer(name="MaxPool", kernel_dims=(2, 2)),
+                     #data_format="channels_first"),
     "layer_4": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_5": Layer(name="MaxPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
+                     stride_dims=(1, 1)), #data_format="channels_first"),
+    "layer_5": Layer(name="MaxPool", kernel_dims=(2, 2)),
+                     #data_format="channels_first"),
     "layer_6": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first")
+                     stride_dims=(1, 1)), #data_format="channels_first")
   }
 }
 
@@ -90,17 +90,17 @@ MODEL_2_AP = {
   "name": "model_2_ap",
   "layers": {
     "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
-                     stride_dims=(1, 1), data_format="channels_first"),
+                     stride_dims=(1, 1)), #, data_format="channels_first"),
     "layer_2": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_3": Layer(name="AvgPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
+                     stride_dims=(1, 1)), #, data_format="channels_first"),
+    "layer_3": Layer(name="AvgPool", kernel_dims=(2, 2)),
+                    # data_format="channels_first"),
     "layer_4": Layer(name="Conv", num_kernels=24, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first"),
-    "layer_5": Layer(name="AvgPool", kernel_dims=(2, 2),
-                     data_format="channels_first"),
+                     stride_dims=(1, 1)), #, data_format="channels_first"),
+    "layer_5": Layer(name="AvgPool", kernel_dims=(2, 2)),
+                     #data_format="channels_first"),
     "layer_6": Layer(name="Conv", num_kernels=32, kernel_dims=(3, 3),
-                     stride_dims=(1, 1), data_format="channels_first")
+                     stride_dims=(1, 1)) #, data_format="channels_first")
   }
 }
 
