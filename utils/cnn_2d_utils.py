@@ -98,7 +98,7 @@ def _get_dropout_block(block, dp_prob, layer_objs_lst):
 
   return dp_out
 
-def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
+def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
   """
   Returns a 2D CNN model.
 
@@ -127,7 +127,8 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
       x = _get_avg_pool_block(x, layer, layer_objs_lst)
     elif layer.name == "Dropout":
       # Dropout probability is layer.num_kernels.
-      x = _get_dropout_block(x, layer.num_kernels, layer_objs_lst)
+      if include_dropout:
+        x = _get_dropout_block(x, layer.num_kernels, layer_objs_lst)
   # Flatten
   # FIXME: Probable bug in Nengo-DL where data_format = "channels_last" in
   # Flatten layer results in garbage predictions.
@@ -135,7 +136,7 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10):
   x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
   x = _get_dense_block(x, tf_cfg["nn_dlyr"], layer_objs_lst)
-  if model["name"] == "model_7":
+  if model["name"] == "model_7" and include_dropout:
     x = _get_dropout_block(x, 0.5, layer_objs_lst)
   # Add the final output Dense block.
   # output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")

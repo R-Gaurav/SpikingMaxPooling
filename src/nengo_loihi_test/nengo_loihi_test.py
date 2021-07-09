@@ -18,7 +18,8 @@ import _init_paths
 from configs.exp_configs import tf_exp_cfg as tf_cfg, nengo_loihi_cfg as nloihi_cfg
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_exp_dataset
-from utils.base_utils.exp_utils import get_grouped_slices_2d_pooling
+from utils.base_utils.exp_utils import (
+    get_grouped_slices_2d_pooling, get_grouped_slices_2d_pooling_cl)
 from utils.consts.exp_consts import SEED, MNIST, CIFAR10
 from utils.nengo_dl_utils import get_nengo_dl_model
 from utils.nengo_loihi_utils import configure_ensemble_for_2x2_max_join_op
@@ -47,7 +48,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
   log.INFO("Getting the NengoDL model for MAX joinOp based MaxPooling...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, include_non_max_pool_probes=False)
+      max_to_avg_pool=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
       nloihi_cfg["dataset"], channels_first=channels_first, start_idx=start_idx,
@@ -73,6 +74,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
     # TODO: Check if on_chip is set True for the new MAX joinOp Ensemble?
     # In the TF model, the first Conv layer (immediately after the Input layer)
     # is responsible to converting images to spikes, therefore set it to run Off-Chip.
+    print("RG: NDL MOdel layers: ", ndl_model.model.layers[1])
+    print("RG: ", [key for key in ndl_model.layers.keys()])
+    print("RG: NDL Model net config keys: ", ndl_model.net.config)
     ndl_model.net.config[
         ndl_model.layers[ndl_model.model.layers[1]].ensemble].on_chip = False
 
@@ -99,7 +103,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
   def _get_conv_layer_output_shape(layer_name):
     for layer in ndl_model.model.layers:
       if layer.name == layer_name.split(".")[0]:
-        return layer.output.shape[1:] # (num_chnls, rows, cols)
+        return layer.output.shape[1:]
 
   ################# REPLACE THE CONNECTIONS ##########################
   # List to store Ensembles doing MAX joinOp to be configured later in the
@@ -110,9 +114,15 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
       # Get the Conv layer grouped slices for MaxPooling.
       conv_label = conn_from_pconv_to_max.pre_obj.ensemble.label
-      (num_chnls, rows, cols) = _get_conv_layer_output_shape(conv_label)
-      grouped_slices = get_grouped_slices_2d_pooling(
-          pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
+      if channels_first:
+        (num_chnls, rows, cols) = _get_conv_layer_output_shape(conv_label)
+        grouped_slices = get_grouped_slices_2d_pooling(
+            pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
+      else:
+        (rows, cols, num_chnls) = _get_conv_layer_output_shape(conv_label)
+        grouped_slices = get_grouped_slices_2d_pooling_cl(
+            pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
+
       log.INFO("Grouped slices of Conv: %s for MaxPooling obtained." % conv_label)
 
       # Create the Ensemble to do the MAX joinOp.
@@ -286,7 +296,6 @@ def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
   correct = 100 * np.mean(
       loihi_predictions == np.argmax(
       test_y[:nloihi_cfg["test_mode"]["n_test"]], axis=-1))
-  log.INFO("AvgPooling based Loihi Accuracy with Model: %s is: %s"
   correct = 100 * np.mean(loihi_predictions == np.argmax(test_y, axis=-1))
   log.INFO("Loihi Accuracy with Model: %s is: %s"
            % (tf_cfg["tf_model"]["name"], correct))

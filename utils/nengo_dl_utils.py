@@ -49,16 +49,18 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
   log.INFO("Nengo DL Mode: {}".format(mode))
 
   # Creating the model.
-  model, layer_objs_lst = get_2d_cnn_model(inpt_shape, tf_cfg, num_clss)
+  include_dropout = mode == "train"
+  model, layer_objs_lst = get_2d_cnn_model(
+      inpt_shape, tf_cfg, num_clss, include_dropout=include_dropout)
   log.INFO("Writing tf_model.summary() to file nengo_tf_model_summary.txt")
   file_path = (ngo_cfg["test_mode"]["test_mode_res_otpt_dir"] if mode == "test"
                else ngo_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"])
   with open(file_path + "/nengo_tf_model_summary.txt", "w") as f:
     model.summary(print_fn=lambda x: f.write(x + "\n"))
 
-  if mode=="test":
+  if mode == "test":
     # Remove the Dropout Layers if present in the model and create a new model.
-    model, layer_objs_lst = get_2d_cnn_model_without_dropouts(model)
+    # model, layer_objs_lst = get_2d_cnn_model_without_dropouts(model)
     test_cfg = ngo_cfg["test_mode"]
     if load_tf_trained_wts:
       log.INFO("Test Mode: Loading the TF trained weights in the model...")
