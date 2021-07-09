@@ -132,5 +132,5 @@ if __name__ == "__main__":
       "%s_sfr_%s_epochs_%s_timestamp_%s_.log" % (
       ndl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"] + "_nengo_dl_train_",
       ndl_cfg["train_mode"]["sfr"], tf_cfg["epochs"], datetime.datetime.now()))
-  nengo_dl_train()
+  #nengo_dl_train()
   nengo_dl_test()

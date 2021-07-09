@@ -99,7 +99,7 @@ nengo_dl_cfg = {
     "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 120, # 80 required for a deeper MODEL_7
+    "n_steps": 150, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"
