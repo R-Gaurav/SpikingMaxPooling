@@ -114,14 +114,14 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
     if not collect_probe_history:
       nengo_dl.configure_settings(keep_history=False)
     nengo_dl.configure_settings(stateful=False)
-    if include_layer_probes:
+    if include_layer_probes: # Layers other than MaxPooling.
       for lyr_obj in layer_objs_lst[1:-1]:
-        # Skip the probes for MaxPooling layers as they won't be present in the
-        # Associative-Max based SNN, else execution will error out.
-        # TODO: Include it for other analysis though.
         if not lyr_obj.name.startswith("max_pooling"):
-          nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
-    if include_mp_layer_probes:
+          log.INFO("RG: Layer OBJ: {}, name: {}".format(lyr_obj, lyr_obj.name))
+          if lyr_obj.name.startswith("conv2d_2"):
+            nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))
+                                        #attr="input"))
+    if include_mp_layer_probes: # Only MaxPooling layers.
       for lyr_obj in layer_objs_lst[1:-1]:
         if lyr_obj.name.startswith("max_pooling"):
           nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj]))

@@ -98,3 +98,27 @@ def get_max_pool_otpt_indices(mp_otpt_matrix):
     mp_ti_otpt_idcs[ti_idx] = ti_non_zero_otpt
 
   return mp_ti_otpt_idcs
+
+def get_loihi_probes_output(probe_otpt, pres_steps):
+  """
+  Returns a list of len: num_test_images where each element is an array of shape:
+  (pres_steps x num_neurons) for the passed probe output `probe_otpt`.
+
+  Args:
+    probe_otpt <numpy.ndarray>: Object of neurons output.
+    pres_steps <int>: Presentation time steps.
+  Returns:
+    [np.ndarray]
+  """
+  dikt = probe_otpt.item()
+  layer_keys, ret = dikt.keys(), {}
+
+  for layer in layer_keys:
+    start, all_tsteps, lst = 0, np.arange(0, len(dikt[layer])), []
+    img_wise_end_tsteps = all_tsteps[pres_steps-1 :: pres_steps]
+    for end_tstep in img_wise_end_tsteps:
+      lst.append(np.array(dikt[layer][start : end_tstep+1]))
+      start = end_tstep + 1
+    ret[layer] = lst
+
+  return ret

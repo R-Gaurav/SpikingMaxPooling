@@ -15,6 +15,7 @@ import warnings
 
 import _init_paths
 
+from collections import defaultdict
 from configs.exp_configs import tf_exp_cfg as tf_cfg, nengo_loihi_cfg as nloihi_cfg
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_exp_dataset
@@ -32,7 +33,8 @@ random.seed(SEED)
 np.random.seed(SEED)
 
 def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
-                                          start_idx, end_idx):
+                                          start_idx, end_idx,
+                                          include_max_jop_otpt_probes=False):
   """
   Doest NengoLoihi test of models with MaxPooling implemented by MAX joinOp method.
 
@@ -45,22 +47,26 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
   Returns:
     float, np.ndarray: Test Accuracy, Test class predictions (e.g. [7, 1, ..])
   """
+  print("RG: Inside _do_nengo_loihi_MAX_joinOP_MaxPooling, channels_first: %s"
+        % channels_first)
   log.INFO("Getting the NengoDL model for MAX joinOp based MaxPooling...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False)
+      max_to_avg_pool=False, channels_first=channels_first,
+      include_layer_probes=True)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
       nloihi_cfg["dataset"], channels_first=channels_first, start_idx=start_idx,
       end_idx=end_idx)
   # Flatten `test_x`.
+  print("RG: test_x shape: {}".format(test_x.shape))
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
   pres_time = nloihi_cfg["test_mode"]["n_steps"] * 0.001 # Convert to ms.
 
   log.INFO("Loading the trained Params: %s" % nloihi_cfg["trained_model_params"])
   nengo_input, nengo_output = ngo_probes_lst[0], ngo_probes_lst[-1]
   # Build the Network, load the trained weights, save to network.
-  with nengo_dl.Simulator(ndl_model.net) as ndl_sim:
+  with nengo_dl.Simulator(ndl_model.net, seed=SEED) as ndl_sim:
     ndl_sim.load_params(nloihi_cfg["trained_model_params"]+ "/ndl_trained_params")
                         #"/attempting_TN_MP_loihineurons_8_16")
     ndl_sim.freeze_params(ndl_model.net)
@@ -108,9 +114,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
   ################# REPLACE THE CONNECTIONS ##########################
   # List to store Ensembles doing MAX joinOp to be configured later in the
   # NengoLoihi Simulator.
-  max_join_op_ens_list = []
+  max_join_op_ens_list, max_join_op_ens_probe_lst = [], []
   with ndl_model.net:
-    for conn_tpl in all_mp_tn_conns:
+    for i, conn_tpl in enumerate(all_mp_tn_conns):
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
       # Get the Conv layer grouped slices for MaxPooling.
       conv_label = conn_from_pconv_to_max.pre_obj.ensemble.label
@@ -120,9 +126,11 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
             pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
       else:
         (rows, cols, num_chnls) = _get_conv_layer_output_shape(conv_label)
+        print("RG: Conv layer otpt shape: %s, %s, %s" % (rows, cols, num_chnls))
         grouped_slices = get_grouped_slices_2d_pooling_cl(
             pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
 
+      print("RG: Grouped Slices first 20: %s" % grouped_slices[:20])
       log.INFO("Grouped slices of Conv: %s for MaxPooling obtained." % conv_label)
 
       # Create the Ensemble to do the MAX joinOp.
@@ -137,12 +145,28 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
         neuron_type=nengo_loihi.neurons.LoihiSpikingRectifiedLinear(
           amplitude=nloihi_cfg["test_mode"]["scale"]/1000,
           initial_state={"voltage": np.zeros(num_neurons)}
-        )
+        ),
+        label="max_join_op_ens_%s" % i
       )
-      max_join_op_ens_list.append(max_join_op_ens)
+      # Probing selected neurons of Max-JoinOP Ensemble results in following error:
+      """
+      nengo.exceptions.SimulationError: Board connection error: A source compartment can only connect to either discrete axons or population axons, but not both types. Note that spike probes require a discrete axon.
+      """
+      #if include_max_jop_otpt_probes:
+      #  max_join_op_ens_probe_lst.append(
+      #      nengo.Probe(
+      #      #max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
+      #      max_join_op_ens.neurons[:20],
+      #      synapse=None))
+      #  max_join_op_ens_list.append(max_join_op_ens)
+
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
-      ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-          (rows, cols, 1), (rows, cols, num_chnls)) # Results in 100% acc in 40 n_steps in MODEL_2.
+      if channels_first:
+        ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
+            (1, rows, cols), (num_chnls, rows, cols))
+      else:
+        ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
+            (rows, cols, 1), (rows, cols, num_chnls))
           #(1, rows, cols), (num_chnls, rows, cols)) # Results in 100% acc in 40 n_steps in MODEL_2.
           #(16, 8, 8), (num_chnls, rows, cols)) # Results is 95% acc in 40 and 50 n_steps in MODEL_2.
 
@@ -150,7 +174,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
       nengo.Connection(
           conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_join_op_ens.neurons,
-          transform=None, #conn_from_pconv_to_max.transform, # NoTransform.
+          transform=conn_from_pconv_to_max.transform, # NoTransform.
           # TODO: Remove the following.
           #synapse=conn_from_pconv_to_max.synapse, # Here synapse is 0.005.
           synapse=None, # Feed Spikes to JoinOp Ens instead of filtered signal.
@@ -205,40 +229,45 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
       # with number of neurons less than 1024, so no need to partition them.
 
   ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
-  with nengo_loihi.Simulator(ndl_model.net, target="loihi") as loihi_sim:
+  with nengo_loihi.Simulator(ndl_model.net, seed=SEED, target="loihi") as loihi_sim:
 
-  ##############################################################################
-    for ens in ndl_model.net.all_ensembles:
-      print("$"*80)
-      print("RG: ", ens)
-      #ens = ndl_model.layers[ndl_model.model.layers[1]].ensemble
-      blocks = loihi_sim.model.objs[ens]
-      log.INFO("Number of (in and out) Blocks for Ensemble %s are: %s and %s."
-               % (ens, len(blocks["in"]), len(blocks["out"])))
-      for block in blocks["in"]:
-        in_chip_idx, in_core_idx, in_block_idx, in_compartment_idxs, _ = (
-            board.find_block(block))
-        print("Ens: %s, block: %s, chip_idx: %s, core_idx: %s"
-              % (ens, block, in_chip_idx, in_core_idx))
-      print("$"*80)
+  ########################z TODO: REMOVE LATER ###########################
+  #  for ens in ndl_model.net.all_ensembles:
+  #    print("$"*80)
+  #    print("RG: ", ens)
+  #    #ens = ndl_model.layers[ndl_model.model.layers[1]].ensemble
+  #    blocks = loihi_sim.model.objs[ens]
+  #    log.INFO("Number of (in and out) Blocks for Ensemble %s are: %s and %s."
+  #             % (ens, len(blocks["in"]), len(blocks["out"])))
+  #    for block in blocks["in"]:
+  #      in_chip_idx, in_core_idx, in_block_idx, in_compartment_idxs, _ = (
+  #          board.find_block(block))
+  #      print("Ens: %s, block: %s, chip_idx: %s, core_idx: %s"
+  #            % (ens, block, in_chip_idx, in_core_idx))
+  #    print("$"*80)
   ##############################################################################
     for max_join_op_ens in max_join_op_ens_list:
       configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens)
     loihi_sim.run(nloihi_cfg["test_mode"]["n_test"] * pres_time)
 
+  layer_probes_otpt = defaultdict(list)
   # Get the output (last timestep of each presentation period)
   pres_steps = int(round(pres_time / loihi_sim.dt))
   output = loihi_sim.data[nengo_output][pres_steps-1 :: pres_steps]
-
+  for probe in ngo_probes_lst[1:-1]:
+    layer_probes_otpt[probe.obj.ensemble.label].extend(loihi_sim.data[probe])
+  for probe in max_join_op_ens_probe_lst:
+    layer_probes_otpt[probe.obj.label].extend(loihi_sim.data[probe])
   # Compute Loihi Accuracy.
   loihi_predictions = np.argmax(output, axis=-1)
+  print("RG: Loihi Prediction classes: {}".format(loihi_predictions))
   correct = 100 * np.mean(
       loihi_predictions == np.argmax(
       test_y[:nloihi_cfg["test_mode"]["n_test"]], axis=-1))
   log.INFO("MAX joinOp based Loihi Accuracy with Model: %s is: %s"
            % (tf_cfg["tf_model"]["name"], correct))
   log.INFO("*"*100)
-  return correct, loihi_predictions
+  return correct, loihi_predictions, layer_probes_otpt
 
 def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
   """
@@ -254,7 +283,7 @@ def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
   log.INFO("Getting the NengoDL model for AveragePooling spiking CNN...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, include_non_max_pool_probes=False)
+      max_to_avg_pool=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
       nloihi_cfg["dataset"], start_idx=start_idx, end_idx=end_idx)
@@ -266,7 +295,7 @@ def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
   log.INFO("Loading the trained Params: %s" % nloihi_cfg["trained_model_params"])
   nengo_input, nengo_output = ngo_probes_lst[0], ngo_probes_lst[-1]
   # Build the Network, load the trained weights, save to network.
-  with nengo_dl.Simulator(ndl_model.net) as ndl_sim:
+  with nengo_dl.Simulator(ndl_model.net, seed=SEED) as ndl_sim:
     ndl_sim.load_params(nloihi_cfg["trained_model_params"]+ "/ndl_trained_params")
     ndl_sim.freeze_params(ndl_model.net)
 
@@ -301,7 +330,7 @@ def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
 
   ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
   #with nengo_loihi.Simulator(ndl_model.net, remove_passthrough=False) as loihi_sim:
-  with nengo_loihi.Simulator(ndl_model.net) as loihi_sim:
+  with nengo_loihi.Simulator(ndl_model.net, seed=SEED) as loihi_sim:
     loihi_sim.run(nloihi_cfg["test_mode"]["n_test"] * pres_time)
 
   # Get the output (last timestep of each presentation period)
@@ -332,10 +361,10 @@ def nengo_loihi_test(start):
 
   ###############################################################################
   if nloihi_cfg["dataset"] == MNIST:
-    inpt_shape = (1, 28, 28)
+    inpt_shape = (28, 28, 1)
     num_clss = 10
     num_test_imgs = 10000
-    channels_first = True
+    channels_first = False
   elif nloihi_cfg["dataset"] == CIFAR10:
     inpt_shape = (32, 32, 3)
     num_clss = 10
@@ -357,15 +386,19 @@ def nengo_loihi_test(start):
           inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx)
     else:
       log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
-      acc, loihi_batch_preds = _do_nengo_loihi_MAX_joinOP_MaxPooling(
+      acc, loihi_batch_preds, layer_probes_otpt = (
+          _do_nengo_loihi_MAX_joinOP_MaxPooling(
           inpt_shape, num_clss, channels_first=channels_first,
-          start_idx=start_idx, end_idx=end_idx)
+          start_idx=start_idx, end_idx=end_idx, include_max_jop_otpt_probes=True))
 
     acc_per_batch_list.append(acc)
     # Dump the accuracy result for the current batch.
+    #np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
+    #        "/Acc_and_preds_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
+    #        (acc, loihi_batch_preds))
     np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
-            "/Acc_and_preds_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
-            (acc, loihi_batch_preds))
+            "/Layer_probes_otpt_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
+            layer_probes_otpt)
 
     log.INFO("Batch: [%s, %s) Done!" % (start_idx, end_idx))
     log.INFO("Up till batch %s, Mean Accuracy so far: %s" % (

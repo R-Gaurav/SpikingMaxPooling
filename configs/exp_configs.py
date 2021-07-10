@@ -43,8 +43,8 @@ nengo_loihi_cfg = {
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
     "n_steps": 50, # in milliseconds.
-    "n_test": 20, # Number of images to be tested.
-    "scale": 1, # Scaling parameter of the output of root neurons. (MODEL_1)
+    "n_test": 10, # Number of images to be tested.
+    "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_1)
     # "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_2)
     ################# WITH MODEL_1 and MNIST ###########################
     # scale=1.2 => 97.2
@@ -64,8 +64,8 @@ nengo_loihi_cfg = {
   },
   "layer_blockshapes": {
     "model_1": {
-      "conv2d_0": (1, 26, 26),
-      "conv2d_1": (8, 11, 11),
+      "conv2d_0": (26, 26, 1), #(1, 26, 26),
+      "conv2d_1": (11, 11, 8), #(8, 11, 11),
     },
     "model_2": {
       "conv2d_0": (1, 26, 26),
