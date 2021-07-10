@@ -39,9 +39,9 @@ def nengo_dl_train():
   num_imgs = train_x.shape[0]
 
   if tf_cfg["dataset"] == MNIST:
-    inpt_shape = (1, 28, 28)
+    inpt_shape = (28, 28, 1)
     num_clss = 10
-    channels_first = True
+    channels_first = False
   elif tf_cfg["dataset"] == CIFAR10:
     inpt_shape = (32, 32, 3)
     num_clss = 10
@@ -91,9 +91,9 @@ def nengo_dl_test(n_test=None):
   Does Nengo-DL testing with TensorNode MaxPooling.
   """
   if tf_cfg["dataset"] == MNIST:
-    inpt_shape = (1, 28, 28)
+    inpt_shape = (28, 28, 1)
     num_clss = 10
-    channels_first = True
+    channels_first = False
   elif tf_cfg["dataset"] == CIFAR10:
     inpt_shape = (32, 32, 3)
     num_clss = 10
@@ -152,5 +152,5 @@ if __name__ == "__main__":
       "%s_sfr_%s_epochs_%s_timestamp_%s_.log" % (
       ndl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"] + "_nengo_dl_train_",
       ndl_cfg["train_mode"]["sfr"], tf_cfg["epochs"], datetime.datetime.now()))
-  #nengo_dl_train()
-  nengo_dl_test(n_test=1000)
+  nengo_dl_train()
+  nengo_dl_test(n_test=None)

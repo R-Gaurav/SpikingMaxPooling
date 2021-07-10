@@ -22,13 +22,13 @@ from utils.consts.model_consts import (
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
 model = MODEL_1
-dataset = CIFAR10 # One of MNIST, CIFAR10
+dataset = MNIST # One of MNIST, CIFAR10
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
   "batch_size": 100,
   "dataset": dataset,
-  "epochs": 12 if dataset == MNIST else 32, #160,
+  "epochs": 6 if dataset == MNIST else 32, #160,
   "lr": 1e-3,
   "nn_dlyr": 128,
   "tf_model": model,
