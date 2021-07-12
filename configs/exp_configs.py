@@ -11,6 +11,7 @@ from utils.consts.exp_consts import MNIST, CIFAR10
 from utils.consts.model_consts import (
     MODEL_1, MODEL_2, MODEL_3, MODEL_4, MODEL_5, MODEL_6, MODEL_7,
     MODEL_1_AP, MODEL_2_AP)
+from .block_configs import block_shapes
 
 # The TF train/test and Nengo-DL test variations are only with `model` and
 # `dataset`, however, in case of Nengo-DL test, one can include variations with
@@ -23,9 +24,11 @@ from utils.consts.model_consts import (
 
 model = MODEL_1
 dataset = MNIST # One of MNIST, CIFAR10
+is_channels_first = False
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
+  "is_channels_first": is_channels_first,
   "batch_size": 100,
   "dataset": dataset,
   "epochs": 6 if dataset == MNIST else 32, #160,
@@ -62,31 +65,9 @@ nengo_loihi_cfg = {
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/nengo_loihi_otpts/" % (dataset, model["name"]))
   },
-  "layer_blockshapes": {
-    "model_1": {
-      "conv2d_0": (26, 26, 1), #(1, 26, 26),
-      "conv2d_1": (11, 11, 8), #(8, 11, 11),
-    },
-    "model_2": {
-      "conv2d_0": (1, 26, 26),
-      "conv2d_1": (8, 11, 11),
-      "conv2d_2": (24, 3, 3)
-    },
-    "model_2_ap": {
-      "conv2d_0": (1, 26, 26),
-      "conv2d_1": (8, 11, 11),
-      "conv2d_2": (24, 3, 3)
-    },
-    "model_7": {
-      # first Conv layer runs off-chip, so no partition needed.
-      "conv2d_0": (8, 8, 16), #(1, 30, 30),
-      "conv2d_1": (28, 28, 1), #(8, 8, 16), #(28, 28, 1),
-      "conv2d_2": (8, 8, 8), # (8, 8, 16), (12, 12, 4),
-      "conv2d_3": (8, 8, 8), #(10, 10, 4),
-      "conv2d_4": (3, 3, 12),# (4, 4, 8), (3, 3, 16)
-      "conv2d_5": (4, 4, 64),
-    }
-  },
+  "layer_blockshapes": block_shapes[
+      "channels_first" if is_channels_first else "channels_last"][dataset][
+      model["name"]],
 }
 
 nengo_dl_cfg = {

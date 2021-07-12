@@ -327,7 +327,7 @@ def plot_ndl_model_layers_info(do_plot_tuning_curves=True):
     fig1.show()
     pass # No need to execute the simlation, as we just need the compiled model.
 
-def get_grouped_slices_2d_pooling(**kwargs):
+def get_grouped_slices_2d_pooling_cf(**kwargs):
   """
   Creates square grouped slices based on the `pool_size`. E.g. for a flattened
   array, the indices are [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,

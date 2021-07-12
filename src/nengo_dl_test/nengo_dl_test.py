@@ -19,7 +19,7 @@ from configs.exp_configs import (
     nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg, asctv_max_cfg as am_cfg)
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_batches_of_exp_dataset
-from utils.base_utils.exp_utils import (get_grouped_slices_2d_pooling,
+from utils.base_utils.exp_utils import (get_grouped_slices_2d_pooling_cf,
                                         get_isi_based_max_pooling_params)
 from utils.consts.exp_consts import SEED, MNIST, CIFAR10
 from utils.nengo_dl_utils import (get_nengo_dl_model, get_max_pool_global_net,
@@ -127,7 +127,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
       ########## GET THE CONV LAYER GROUPED SLICES FOR MAX POOLING ###########
       conv_label = conn_from_pconv_to_max.pre_obj.ensemble.label
       (num_chnls, rows, cols) = _get_conv_layer_output_shape(conv_label)
-      grouped_slices = get_grouped_slices_2d_pooling(
+      grouped_slices = get_grouped_slices_2d_pooling_cf(
           pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
       log.INFO("Grouped slices of Conv: %s for MaxPooling obtained." % conv_label)
 

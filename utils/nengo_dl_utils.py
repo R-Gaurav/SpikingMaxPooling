@@ -20,7 +20,7 @@ from utils.consts.exp_consts import (ISI_BASED_MP_PARAMS, SEED,
 def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
                        collect_probe_history=True, max_to_avg_pool=False,
                        load_tf_trained_wts=False, include_layer_probes=False,
-                       include_mp_layer_probes=False, channels_first=True):
+                       include_mp_layer_probes=False):
   """
   Returns the nengo_dl model.
 
@@ -51,8 +51,7 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
   # Creating the model.
   include_dropout = mode == "train"
   model, layer_objs_lst = get_2d_cnn_model(
-      inpt_shape, tf_cfg, num_clss, include_dropout=include_dropout,
-      channels_first=channels_first)
+      inpt_shape, tf_cfg, num_clss, include_dropout=include_dropout)
   log.INFO("Writing tf_model.summary() to file nengo_tf_model_summary.txt")
   file_path = (ngo_cfg["test_mode"]["test_mode_res_otpt_dir"] if mode == "test"
                else ngo_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"])

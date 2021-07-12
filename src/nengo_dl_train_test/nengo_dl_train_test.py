@@ -39,18 +39,15 @@ def nengo_dl_train():
   num_imgs = train_x.shape[0]
 
   if tf_cfg["dataset"] == MNIST:
-    inpt_shape = (28, 28, 1)
+    inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
-    channels_first = False
   elif tf_cfg["dataset"] == CIFAR10:
-    inpt_shape = (32, 32, 3)
+    inpt_shape = (3, 32, 32) if tf_cfg["is_channels_first"] else (32, 32, 3)
     num_clss = 10
-    channels_first = False
   ##############################################################################
   log.INFO("Getting the NengoDL model to be trained...:")
   ndl_model, ndl_mdl_probes = get_nengo_dl_model(
-      inpt_shape, tf_cfg, ndl_cfg, mode="train", num_clss=num_clss,
-      channels_first=channels_first)
+      inpt_shape, tf_cfg, ndl_cfg, mode="train", num_clss=num_clss)
   ndl_train_cfg = ndl_cfg["train_mode"]
   train_bs = ndl_train_cfg["train_batch_size"]
   # TODO: Is there a need to set the following? May be when training neuron is Spiking Neuron?
@@ -77,7 +74,7 @@ def nengo_dl_train():
     for epoch in range(tf_cfg["epochs"]):
       log.INFO("Executing Epoch: %s ..." % epoch)
       batches = get_batches_of_exp_dataset(
-            ndl_cfg, is_test=False, channels_first=channels_first)
+            ndl_cfg, is_test=False, channels_first=tf_cfg["is_channels_first"])
       ndl_sim.fit(batches, epochs=1, steps_per_epoch=num_imgs // train_bs)
 
     log.INFO("Saving the trained model-parameters...")
@@ -91,22 +88,19 @@ def nengo_dl_test(n_test=None):
   Does Nengo-DL testing with TensorNode MaxPooling.
   """
   if tf_cfg["dataset"] == MNIST:
-    inpt_shape = (28, 28, 1)
+    inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
-    channels_first = False
   elif tf_cfg["dataset"] == CIFAR10:
-    inpt_shape = (32, 32, 3)
+    inpt_shape = (3, 32, 32) if tf_cfg["is_channels_first"] else (32, 32, 3)
     num_clss = 10
-    channels_first = False
 
   log.INFO("Getting the Nengo-DL model...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, channels_first=channels_first,
-      include_mp_layer_probes=True)
+      max_to_avg_pool=False, include_mp_layer_probes=True)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
-      ndl_cfg, is_test=True, channels_first=channels_first)
+      ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"])
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],

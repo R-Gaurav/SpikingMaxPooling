@@ -20,7 +20,7 @@ from configs.exp_configs import tf_exp_cfg as tf_cfg, nengo_loihi_cfg as nloihi_
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_exp_dataset
 from utils.base_utils.exp_utils import (
-    get_grouped_slices_2d_pooling, get_grouped_slices_2d_pooling_cl)
+    get_grouped_slices_2d_pooling_cf, get_grouped_slices_2d_pooling_cl)
 from utils.consts.exp_consts import SEED, MNIST, CIFAR10
 from utils.nengo_dl_utils import get_nengo_dl_model
 from utils.nengo_loihi_utils import configure_ensemble_for_2x2_max_join_op
@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore", message="No GPU", module="nengo_dl")
 random.seed(SEED)
 np.random.seed(SEED)
 
-def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
+def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
                                           start_idx, end_idx,
                                           include_max_jop_otpt_probes=False):
   """
@@ -47,17 +47,14 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
   Returns:
     float, np.ndarray: Test Accuracy, Test class predictions (e.g. [7, 1, ..])
   """
-  print("RG: Inside _do_nengo_loihi_MAX_joinOP_MaxPooling, channels_first: %s"
-        % channels_first)
   log.INFO("Getting the NengoDL model for MAX joinOp based MaxPooling...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, channels_first=channels_first,
-      include_layer_probes=True)
+      max_to_avg_pool=False, include_layer_probes=True)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
-      nloihi_cfg["dataset"], channels_first=channels_first, start_idx=start_idx,
-      end_idx=end_idx)
+      nloihi_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],
+      start_idx=start_idx, end_idx=end_idx)
   # Flatten `test_x`.
   print("RG: test_x shape: {}".format(test_x.shape))
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
@@ -120,9 +117,9 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
       # Get the Conv layer grouped slices for MaxPooling.
       conv_label = conn_from_pconv_to_max.pre_obj.ensemble.label
-      if channels_first:
+      if tf_cfg["is_channels_first"]:
         (num_chnls, rows, cols) = _get_conv_layer_output_shape(conv_label)
-        grouped_slices = get_grouped_slices_2d_pooling(
+        grouped_slices = get_grouped_slices_2d_pooling_cf(
             pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
       else:
         (rows, cols, num_chnls) = _get_conv_layer_output_shape(conv_label)
@@ -161,7 +158,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
       #  max_join_op_ens_list.append(max_join_op_ens)
 
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
-      if channels_first:
+      if tf_cfg["is_channels_first"]:
         ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
             (1, rows, cols), (num_chnls, rows, cols))
       else:
@@ -170,11 +167,18 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
           #(1, rows, cols), (num_chnls, rows, cols)) # Results in 100% acc in 40 n_steps in MODEL_2.
           #(16, 8, 8), (num_chnls, rows, cols)) # Results is 95% acc in 40 and 50 n_steps in MODEL_2.
 
+      if tf_cfg["is_channels_first"]:
+        output_idcs = [i for i in range(num_neurons) if i%4==3]
+      else:
+        output_idcs = np.array([i for i in range(num_neurons) if i%4==3]).reshape(
+            num_chnls, rows//2, cols//2)
+        output_idcs = np.moveaxis(output_idcs, 0, -1)
+        output_idcs = output_idcs.flatten()
       ######### CONNECT THE PREV ENS/CONV TO MAX_JOINOP_ENSEMBLE #########
       nengo.Connection(
           conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_join_op_ens.neurons,
-          transform=conn_from_pconv_to_max.transform, # NoTransform.
+          transform=None, #conn_from_pconv_to_max.transform, # NoTransform.
           # TODO: Remove the following.
           #synapse=conn_from_pconv_to_max.synapse, # Here synapse is 0.005.
           synapse=None, # Feed Spikes to JoinOp Ens instead of filtered signal.
@@ -185,7 +189,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
       nengo.Connection(
           # The fourth neuron (index 3, 7, ..) in each group of 4 is the root
           # node/neuron which outputs spikes corresponding to the MAX value.
-          max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
+          #max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
+          max_join_op_ens.neurons[output_idcs],
           conn_from_max_to_nconv.post_obj,
           transform=conn_from_max_to_nconv.transform, # Convolution
           # The conn_from_max_to_nconv.synapse is None, but `Synapse` is required
@@ -213,7 +218,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss, channels_first,
   # Only the intermediate Conv layers and Dense layers run on Loihi, the Input
   # layer, first Conv layer (to convert input to spikes) run off-chip, and the
   # last Dense layer (to collect class prediction scores/logits) runs off-chip.
-  bls_dict, i = nloihi_cfg["layer_blockshapes"][tf_cfg["tf_model"]["name"]], 0
+  bls_dict, i = nloihi_cfg["layer_blockshapes"], 0
   with ndl_model.net:
     # Exclude the Conv layer at index 1 since it runs off-chip to create spikes.
     for layer in ndl_model.model.layers[2:-1]:
@@ -361,15 +366,13 @@ def nengo_loihi_test(start):
 
   ###############################################################################
   if nloihi_cfg["dataset"] == MNIST:
-    inpt_shape = (28, 28, 1)
+    inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
     num_test_imgs = 10000
-    channels_first = False
   elif nloihi_cfg["dataset"] == CIFAR10:
-    inpt_shape = (32, 32, 3)
+    inpt_shape = (3, 32, 32) if tf_cfg["is_channels_first"] else (32, 32, 3)
     num_clss = 10
     num_test_imgs = 10000
-    channels_first = False
   ###############################################################################
 
   acc_per_batch_list = []
@@ -388,8 +391,8 @@ def nengo_loihi_test(start):
       log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
       acc, loihi_batch_preds, layer_probes_otpt = (
           _do_nengo_loihi_MAX_joinOP_MaxPooling(
-          inpt_shape, num_clss, channels_first=channels_first,
-          start_idx=start_idx, end_idx=end_idx, include_max_jop_otpt_probes=True))
+          inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx,
+          include_max_jop_otpt_probes=True))
 
     acc_per_batch_list.append(acc)
     # Dump the accuracy result for the current batch.
