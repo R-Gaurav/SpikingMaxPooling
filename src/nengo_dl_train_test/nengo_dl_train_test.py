@@ -97,7 +97,7 @@ def nengo_dl_test(n_test=None):
   log.INFO("Getting the Nengo-DL model...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, include_mp_layer_probes=True)
+      max_to_avg_pool=False, include_layer_probes=True)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
       ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"])
@@ -114,7 +114,8 @@ def nengo_dl_test(n_test=None):
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
       all_test_imgs_pred_clss.extend(sim_data[ngo_probes_lst[-1]])
       for probe in ngo_probes_lst[1:-1]:
-        layer_probes_otpt[probe.obj.label].extend(sim_data[probe])
+        print("RG: type probe: %s" % type(probe))
+        layer_probes_otpt[probe.obj.ensemble.label].extend(sim_data[probe])
       for true_lbl, pred_lbl in zip(batch[1], sim_data[ngo_probes_lst[-1]]):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
@@ -125,11 +126,9 @@ def nengo_dl_test(n_test=None):
           break
       if do_break:
         break
-        # TODO: Collect the intermediate layers spike/synapsed output.
 
     log.INFO("Testing done! Writing test accuracy results in log...")
     log.INFO("Nengo-DL Test Accuracy: %s" % (acc/n_test_imgs))
-    #TODO: Delete the `ndl_model` to reclaim GPU memory.
     log.INFO("Saving test simulation class output results...")
     np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/sim_pred_clss_otpt",
             np.array(all_test_imgs_pred_clss))
@@ -147,4 +146,4 @@ if __name__ == "__main__":
       ndl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"] + "_nengo_dl_train_",
       ndl_cfg["train_mode"]["sfr"], tf_cfg["epochs"], datetime.datetime.now()))
   nengo_dl_train()
-  nengo_dl_test(n_test=None)
+  nengo_dl_test(n_test=100)
