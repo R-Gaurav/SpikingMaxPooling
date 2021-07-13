@@ -135,9 +135,6 @@ def nengo_dl_test(n_test=None):
     log.INFO("Saving test simulation layer probes outputs...")
     np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/sim_lyr_probes_otpt",
             np.array(layer_probes_otpt))
-    #pickle.dump(layer_probes_otpt,
-    #            open(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+
-    #                 "/sim_lyr_probes_otpt", "wb"))
     log.INFO("*"*100)
 
 if __name__ == "__main__":

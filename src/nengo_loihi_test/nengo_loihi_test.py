@@ -258,6 +258,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   layer_probes_otpt = defaultdict(list)
   # Get the output (last timestep of each presentation period)
   pres_steps = int(round(pres_time / loihi_sim.dt))
+  layer_probes_otpt[nengo_output.obj.label].extend(loihi_sim.data[nengo_output])
   output = loihi_sim.data[nengo_output][pres_steps-1 :: pres_steps]
   for probe in ngo_probes_lst[1:-1]:
     layer_probes_otpt[probe.obj.ensemble.label].extend(loihi_sim.data[probe])
@@ -266,13 +267,13 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   # Compute Loihi Accuracy.
   loihi_predictions = np.argmax(output, axis=-1)
   print("RG: Loihi Prediction classes: {}".format(loihi_predictions))
-  correct = 100 * np.mean(
+  acc = 100 * np.mean(
       loihi_predictions == np.argmax(
       test_y[:nloihi_cfg["test_mode"]["n_test"]], axis=-1))
   log.INFO("MAX joinOp based Loihi Accuracy with Model: %s is: %s"
-           % (tf_cfg["tf_model"]["name"], correct))
+           % (tf_cfg["tf_model"]["name"], acc))
   log.INFO("*"*100)
-  return correct, loihi_predictions, layer_probes_otpt
+  return acc, loihi_predictions, layer_probes_otpt
 
 def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
   """
@@ -396,9 +397,9 @@ def nengo_loihi_test(start):
 
     acc_per_batch_list.append(acc)
     # Dump the accuracy result for the current batch.
-    #np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
-    #        "/Acc_and_preds_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
-    #        (acc, loihi_batch_preds))
+    np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
+            "/Acc_and_preds_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
+            (acc, loihi_batch_preds))
     np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
             "/Layer_probes_otpt_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
             layer_probes_otpt)
