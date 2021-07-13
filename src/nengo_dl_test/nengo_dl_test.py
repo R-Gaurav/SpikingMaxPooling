@@ -4,6 +4,7 @@
 # Author: Ramashish Gaurav
 #
 
+import argparse
 import copy
 import datetime
 import nengo
@@ -42,7 +43,7 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
   log.INFO("Getting the Nengo-DL model with loaded TF trained weights...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=max_to_avg_pool)
+      max_to_avg_pool=max_to_avg_pool, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(ndl_cfg, is_test=True)
   log.INFO("Start testing...")
@@ -79,7 +80,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   log.INFO("Getting the Nengo-DL model with loaded TF trained weights...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False)
+      max_to_avg_pool=False, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(ndl_cfg, is_test=True)
 
@@ -205,7 +206,7 @@ def _do_isi_based_max_pooling(inpt_shape, num_clss):
   log.INFO("Getting the Nengo-DL model with loaded TF trained weights...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      is_isi_based_max_pool=True, max_to_avg_pool=False)
+      max_to_avg_pool=False, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(ndl_cfg, is_test=True)
 
@@ -352,9 +353,19 @@ def nengo_dl_test():
   """
 
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--load_tf_wts", type=bool, required=True,
+                      help="Loads TF weights if True else loads NDL weights.")
+  args = parser.parse_args()
+
   log.configure_log_handler(
       "%s_sfr_%s_n_steps_%s_synapse_%s_%s.log" % (
       ndl_cfg["test_mode"]["test_mode_res_otpt_dir"] + __file__,
       ndl_cfg["test_mode"]["sfr"], ndl_cfg["test_mode"]["n_steps"],
       ndl_cfg["test_mode"]["synapse"], datetime.datetime.now()))
+
+  if args.load_tf_wts:
+    ndl_cfg["sfr"] = 100
+    ndl_cfg["spk_neuron"] = nengo.SpikingRectifiedLinear()
+  ndl_cfg["load_tf_wts"] = args.load_tf_wts
   nengo_dl_test()
