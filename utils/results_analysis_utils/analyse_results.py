@@ -14,6 +14,10 @@ from utils.base_utils.data_prep_utils import get_exp_dataset
 
 def read_nengo_loihi_results(dataset, model_name):
   """
+  Returns the accuracy over all the batches of NengoLoihi predicted classes in
+  files: Acc_and_preds_batch_start_<start_idx>_end_<end_idx>.npy. Also returns
+  the test img indices for which no predicted classes were obtained.
+
   Args:
     dataset <str>: One of MNIST or CIFAR10.
     model_name <str>: Experiment model's name.
@@ -25,8 +29,9 @@ def read_nengo_loihi_results(dataset, model_name):
   matched, total = 0, 0
 
   for f in files:
-    if f.endswith("npy"):
+    if f.startswith("Acc") and f.endswith("npy"):
       res = np.load(results_dir + f, allow_pickle=True)
+      # f = "Acc_and_preds_batch_start_0_end_75.npy"
       start_idx, end_idx = int(f.split("_")[5]), int(f.split("_")[7].split(".")[0])
       matched += np.sum(np.argmax(test_y[start_idx:end_idx], axis=-1) == res[1])
       total += (end_idx - start_idx)

@@ -46,8 +46,8 @@ nengo_loihi_cfg = {
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
     "n_steps": 100, # in milliseconds.
-    "n_test": 100, # Number of images to be tested.
-    "scale": 10, # Scaling parameter of the output of root neurons. (MODEL_1)
+    "n_test": 75, # Number of images to be tested.
+    "scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
     # "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_2)
     ################# WITH MODEL_1 and MNIST ###########################
     # scale=1.2 => 97.2

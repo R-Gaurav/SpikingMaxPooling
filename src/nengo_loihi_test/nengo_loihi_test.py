@@ -154,8 +154,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
       #if include_max_jop_otpt_probes:
       #  max_join_op_ens_probe_lst.append(
       #      nengo.Probe(
-      #      #max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
-      #      max_join_op_ens.neurons[:20],
+      #      max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
+      #      #max_join_op_ens.neurons[:20],
       #      synapse=None))
       #  max_join_op_ens_list.append(max_join_op_ens)
 
@@ -239,6 +239,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
 
   ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
   with nengo_loihi.Simulator(ndl_model.net, seed=SEED, target="loihi") as loihi_sim:
+      #precompute=False, hardware_options={ "snip_max_spikes_per_step": 12000}) as loihi_sim:
 
   ########################z TODO: REMOVE LATER ###########################
   #  for ens in ndl_model.net.all_ensembles:
