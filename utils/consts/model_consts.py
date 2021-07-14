@@ -24,6 +24,20 @@ Layer = namedtuple(
 #   }
 # }
 
+MODEL_ALL_CONV = {
+  "name": "all_conv_model",
+  "layers": {
+    "layer_1": Layer(name="Conv", num_kernels=4, kernel_dims=(1, 1),
+                     stride_dims=(1, 1)),
+    "layer_2": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
+                     stride_dims=(1, 1)),
+    "layer_3": Layer(name="Conv", num_kernels=8, kernel_dims=(3, 3),
+                     stride_dims=(2, 2)),
+    "layer_4": Layer(name="Conv", num_kernels=16, kernel_dims=(3, 3),
+                     stride_dims=(1, 1))
+  }
+}
+
 MODEL_1 = {
   # Total params: 125,989 (MNIST), 175,147 (CIFAR10)
   "name": "model_1",

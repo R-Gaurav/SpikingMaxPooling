@@ -10,7 +10,7 @@ from utils.consts.dir_consts import EXP_OTPT_DIR
 from utils.consts.exp_consts import MNIST, CIFAR10
 from utils.consts.model_consts import (
     MODEL_1, MODEL_2, MODEL_3, MODEL_4, MODEL_5, MODEL_6, MODEL_7,
-    MODEL_1_AP, MODEL_2_AP)
+    MODEL_1_AP, MODEL_2_AP, MODEL_ALL_CONV)
 from .block_configs import block_shapes
 
 # The TF train/test and Nengo-DL test variations are only with `model` and
@@ -22,7 +22,7 @@ from .block_configs import block_shapes
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_1
+model = MODEL_ALL_CONV
 dataset = CIFAR10 # One of MNIST, CIFAR10
 is_channels_first = False
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.

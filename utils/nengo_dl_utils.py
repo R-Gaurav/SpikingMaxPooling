@@ -195,7 +195,7 @@ def get_network_for_2x2_max_pooling(seed=SEED, max_rate=250, radius=1, sf=1,
       ens = nengo.Ensemble(
           n_neurons=2, dimensions=1, encoders = [[1], [-1]], intercepts=[0, 0],
           max_rates=[max_rate, max_rate], radius=radius,
-          neuron_type=nengo.SpikingRectifiedLinear())
+          neuron_type=ndl_cfg["spk_neuron"])
       return ens
 
     ens_12 = _get_ensemble() # Ensemble for max(a, b).

@@ -29,7 +29,8 @@ def tf_train_test():
   log.INFO("TF EXP CONFIG: %s" % tf_cfg)
   ##############################################################################
   log.INFO("Getting the dataset: %s" % tf_cfg["dataset"])
-  train_x, train_y, test_x, test_y = get_exp_dataset(tf_cfg["dataset"])
+  train_x, train_y, test_x, test_y = get_exp_dataset(
+      tf_cfg["dataset"], channels_first=tf_cfg["is_channels_first"])
   log.INFO("Augmenting the dataset: %s" % tf_cfg["dataset"])
   train_idg = tf.keras.preprocessing.image.ImageDataGenerator(
       width_shift_range=0.1, height_shift_range=0.1, rotation_range=20,
@@ -38,10 +39,10 @@ def tf_train_test():
   train_idg.fit(train_x, seed=SEED)
 
   if tf_cfg["dataset"] == MNIST:
-    inpt_shape = (1, 28, 28)
+    inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
   elif tf_cfg["dataset"] == CIFAR10:
-    inpt_shape = (3, 32, 32)
+    inpt_shape = (3, 32, 32) if tf_cfg["is_channels_first"] else (32, 32, 3)
     num_clss = 10
   ##############################################################################
 
@@ -52,7 +53,7 @@ def tf_train_test():
 
   log.INFO("Compiling and training the model...")
   tf_model.compile(
-      optimizer=tf.optimizers.Adam(tf_cfg["lr"]),
+      optimizer=tf.optimizers.Adam(tf_cfg["lr"], decay=1e-4),
       loss=tf.losses.CategoricalCrossentropy(from_logits=True),
       metrics=[tf.metrics.categorical_accuracy])
   #tf_model.fit(train_idg.flow(
