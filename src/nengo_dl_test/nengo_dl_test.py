@@ -124,7 +124,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   ##################### REPLACE THE CONNECTIONS #######################
   with ndl_model.net:
     # Disable operator merging to improve compilation time.
-    # nengo_dl.configure_settings(planner=noop_planner)
+    nengo_dl.configure_settings(planner=noop_planner)
 
     for conn_tpl in all_mp_tn_conns:
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
@@ -178,6 +178,8 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
 
   ########### REMOVE THE OLD CONNECTIONS AND TENSOR-NODES ###############
   with ndl_model.net:
+    # Disable operator merging to improve compilation time.
+    nengo_dl.configure_settings(planner=noop_planner)
     for conn_tpl in all_mp_tn_conns:
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
       ndl_model.net._connections.remove(conn_from_pconv_to_max)
@@ -190,8 +192,8 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
 
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
-      ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"]
-      ) as sim:
+      ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
+      progress_bar=False) as sim:
     log.INFO("Nengo-DL model with associative-max max pooling layer compiled.")
     acc, n_test_imgs = 0, 0
     for batch in test_batches:

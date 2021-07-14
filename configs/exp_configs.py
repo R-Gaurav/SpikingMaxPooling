@@ -22,9 +22,9 @@ from .block_configs import block_shapes
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_ALL_CONV
-dataset = CIFAR10 # One of MNIST, CIFAR10
-is_channels_first = False
+model = MODEL_1
+dataset = MNIST # One of MNIST, CIFAR10
+is_channels_first = True
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
