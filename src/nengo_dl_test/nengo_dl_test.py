@@ -14,7 +14,7 @@ import random
 
 import _init_paths
 
-from nengo_dl.graph_optimizer import noop_planner
+#from nengo_dl.graph_optimizer import noop_planner
 
 from configs.exp_configs import (
     nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg, asctv_max_cfg as am_cfg)
@@ -124,7 +124,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   ##################### REPLACE THE CONNECTIONS #######################
   with ndl_model.net:
     # Disable operator merging to improve compilation time.
-    nengo_dl.configure_settings(planner=noop_planner)
+    # nengo_dl.configure_settings(planner=noop_planner)
 
     for conn_tpl in all_mp_tn_conns:
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
@@ -179,7 +179,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   ########### REMOVE THE OLD CONNECTIONS AND TENSOR-NODES ###############
   with ndl_model.net:
     # Disable operator merging to improve compilation time.
-    nengo_dl.configure_settings(planner=noop_planner)
+    # nengo_dl.configure_settings(planner=noop_planner)
     for conn_tpl in all_mp_tn_conns:
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
       ndl_model.net._connections.remove(conn_from_pconv_to_max)
@@ -193,7 +193,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
-      progress_bar=False) as sim:
+      progress_bar=True) as sim:
     log.INFO("Nengo-DL model with associative-max max pooling layer compiled.")
     acc, n_test_imgs = 0, 0
     for batch in test_batches:
@@ -350,18 +350,17 @@ def nengo_dl_test():
   ##############################################################################
 
   log.INFO("*"*100)
-  """
+
   log.INFO("Testing in TensorNode MaxPooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False)
 
+  """
   log.INFO("Testing in Max To Avg Pooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
-  """
 
   log.INFO("Testing in custom associative max mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
-  """
   log.INFO("Testing in custom associative avg mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=False)
 
@@ -382,7 +381,7 @@ if __name__ == "__main__":
       ndl_cfg["test_mode"]["synapse"], datetime.datetime.now()))
 
   if args.load_tf_wts:
-    ndl_cfg["sfr"] = 100
-    ndl_cfg["spk_neuron"] = nengo.SpikingRectifiedLinear()
+    ndl_cfg["test_mode"]["sfr"] = 100
+    ndl_cfg["test_mode"]["spk_neuron"] = nengo.SpikingRectifiedLinear()
   ndl_cfg["load_tf_wts"] = args.load_tf_wts
   nengo_dl_test()

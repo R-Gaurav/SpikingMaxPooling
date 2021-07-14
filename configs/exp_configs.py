@@ -33,7 +33,7 @@ tf_exp_cfg = {
   "dataset": dataset,
   "epochs": 6 if dataset == MNIST else 32, #160,
   "lr": 1e-3,
-  "nn_dlyr": 128,
+  "nn_dlyr": 64,
   "tf_model": model,
   "tf_res_otpt_dir": EXP_OTPT_DIR + "/%s/%s/tf_otpts/" % (dataset, model["name"]),
   "tf_wts_otpt_dir": (

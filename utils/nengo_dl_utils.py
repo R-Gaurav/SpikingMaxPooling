@@ -9,7 +9,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 from focal_loss import SparseCategoricalFocalLoss
-from nengo_dl.graph_optimizer import noop_planner
+#from nengo_dl.graph_optimizer import noop_planner
 
 from configs.exp_configs import nengo_dl_cfg as ndl_cfg
 from utils.base_utils import log
@@ -191,7 +191,7 @@ def get_network_for_2x2_max_pooling(seed=SEED, max_rate=250, radius=1, sf=1,
   """
   with nengo.Network(seed=seed) as net:
     # Disable operator merging to improve compilation time.
-    nengo_dl.configure_settings(planner=noop_planner)
+    #nengo_dl.configure_settings(planner=noop_planner)
 
     net.input = nengo.Node(size_in=4) # 4 dimensional input for 2x2 pooling.
 
@@ -199,7 +199,7 @@ def get_network_for_2x2_max_pooling(seed=SEED, max_rate=250, radius=1, sf=1,
       ens = nengo.Ensemble(
           n_neurons=2, dimensions=1, encoders = [[1], [-1]], intercepts=[0, 0],
           max_rates=[max_rate, max_rate], radius=radius,
-          neuron_type=ndl_cfg["spk_neuron"])
+          neuron_type=ndl_cfg["test_mode"]["spk_neuron"])
       return ens
 
     ens_12 = _get_ensemble() # Ensemble for max(a, b).
@@ -288,7 +288,7 @@ def get_max_pool_global_net(mp_input_size, seed=SEED, max_rate=250, radius=1,
   num_chnls, rows, cols = mp_input_size
   with nengo.Network(label="custom_max_pool_layer", seed=seed) as net:
     # Disable operator merging to improve compilation time.
-    nengo_dl.configure_settings(planner=noop_planner)
+    # nengo_dl.configure_settings(planner=noop_planner)
 
     net.input = nengo.Node(size_in=np.prod(mp_input_size))
     if rows % 2 and cols % 2:
