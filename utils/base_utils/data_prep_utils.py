@@ -36,8 +36,10 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None):
 
   # TODO: Probably standardize the images?
   # Normalize the images in range [-1, 1]
-  train_x = train_x.astype(np.float32) / 127.5 - 1
-  test_x = test_x.astype(np.float32) / 127.5 - 1
+  # Normalizing the dataset doesn't work well when TF training and NDL test is done.
+
+  #train_x = train_x.astype(np.float32) / 127.5 - 1
+  #test_x = test_x.astype(np.float32) / 127.5 - 1
 
 
   # Default image data format is "channels_last", change the image data to

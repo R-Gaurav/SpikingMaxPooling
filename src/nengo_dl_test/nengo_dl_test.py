@@ -351,16 +351,18 @@ def nengo_dl_test():
 
   log.INFO("*"*100)
 
+  """
   log.INFO("Testing in TensorNode MaxPooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False)
 
-  """
   log.INFO("Testing in Max To Avg Pooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
+  """
 
   log.INFO("Testing in custom associative max mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
+  """
   log.INFO("Testing in custom associative avg mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=False)
 
