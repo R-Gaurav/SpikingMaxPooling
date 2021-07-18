@@ -54,7 +54,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
       nloihi_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],
-      start_idx=start_idx, end_idx=end_idx)
+      start_idx=start_idx, end_idx=end_idx, is_nengo_dl_train_test=True)
   # Flatten `test_x`.
   print("RG: test_x shape: {}".format(test_x.shape))
   test_x = test_x.reshape((test_x.shape[0], 1, -1))
@@ -133,6 +133,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
       # Create the Ensemble to do the MAX joinOp.
       # Check for the feature maps (over which MaxPooling is done) if they have
       # odd number of rows and cols, if odd then discard the last row and column.
+      # Following also takes care of passing in correct values (in groups of 4)
+      # of a channel to one neurocore in case of odd rows and odd cols.
       if rows % 2 and cols % 2: # Note that in this project, rows = cols.
         rows, cols = rows-1, cols-1
       num_neurons = num_chnls * rows * cols
@@ -176,6 +178,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
         output_idcs = output_idcs.flatten()
       ######### CONNECT THE PREV ENS/CONV TO MAX_JOINOP_ENSEMBLE #########
       nengo.Connection(
+          # `num_neurons` is smaller than the `grouped_slices` length in the
+          # case of odd number of rows and cols.
           conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_join_op_ens.neurons,
           transform=None, #conn_from_pconv_to_max.transform, # NoTransform.
@@ -292,7 +296,8 @@ def _do_nengo_loihi_average_pooling(inpt_shape, num_clss, start_idx, end_idx):
       max_to_avg_pool=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
-      nloihi_cfg["dataset"], start_idx=start_idx, end_idx=end_idx)
+      nloihi_cfg["dataset"], start_idx=start_idx, end_idx=end_idx,
+      is_nengo_dl_train_test=True)
 
   # Flatten `test_x`.
   test_x = test_x.reshape((test_x.shape[0], 1, -1))

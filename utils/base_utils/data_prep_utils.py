@@ -11,7 +11,8 @@ import _init_paths
 from utils.consts.exp_consts import MNIST, CIFAR10, SEED
 from utils.base_utils.exp_utils import get_shuffled_lists_in_unison
 
-def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None):
+def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
+                    is_nengo_dl_train_test=False):
   """
   Returns MNIST data with first dimension as the channel dimension if
   `channels_first` = True.
@@ -21,6 +22,8 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None):
     channels_first <bool>: Make the first dimension as channel dimension if True.
     start_idx <int>: The start index (inclusive) of the test dataset.
     end_idx <int>: The end index (exclusive) of the test dataset
+    is_nengo_dl_train_test <bool>: Is the data to be prepared for NengoDL Train/
+                                   Test mode?
 
   Returns:
     numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray
@@ -37,9 +40,10 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None):
   # TODO: Probably standardize the images?
   # Normalize the images in range [-1, 1]
   # Normalizing the dataset doesn't work well when TF training and NDL test is done.
-
-  #train_x = train_x.astype(np.float32) / 127.5 - 1
-  #test_x = test_x.astype(np.float32) / 127.5 - 1
+  # But normalizing it for NengoDL Train-Test works superior than not normalizing.
+  if is_nengo_dl_train_test:
+    train_x = train_x.astype(np.float32) / 127.5 - 1
+    test_x = test_x.astype(np.float32) / 127.5 - 1
 
 
   # Default image data format is "channels_last", change the image data to
@@ -59,13 +63,16 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None):
   else:
     return train_x, train_y, test_x, test_y
 
-def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True):
+def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True,
+                               is_nengo_dl_train_test=False):
   """
   Returns the batches of training or test data.
 
   Args:
     ndl_cfg <dict>: The Nengo-DL related configuration.
     is_test <True>: Returns the test batches if True else Train batches.
+    is_nengo_dl_train_test <bool>: Is the data to be prepared for NengoDL Train/
+                                   Test mode?
 
   Returns
     (np.ndarray, np.ndarray): Train/Test images, Train/Test classes.
@@ -74,7 +81,8 @@ def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True):
   if is_test:
     batch_size = ndl_cfg["test_mode"]["test_batch_size"]
     _, _, imgs, clss = get_exp_dataset(
-        ndl_cfg["dataset"], channels_first=channels_first)
+        ndl_cfg["dataset"], channels_first=channels_first,
+        is_nengo_dl_train_test=is_nengo_dl_train_test)
     num_instances = imgs.shape[0]
     imgs = imgs.reshape((num_instances, 1, -1))
     tiled_imgs = np.tile(imgs, (1, ndl_cfg["test_mode"]["n_steps"], 1))
@@ -87,7 +95,8 @@ def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True):
     assert ndl_cfg["train_mode"]["n_steps"] == 1
     batch_size = ndl_cfg["train_mode"]["train_batch_size"]
     imgs, clss, _, _ = get_exp_dataset(
-        ndl_cfg["dataset"], channels_first=channels_first)
+        ndl_cfg["dataset"], channels_first=channels_first,
+        is_nengo_dl_train_test=is_nengo_dl_train_test)
     clss = clss.reshape((clss.shape[0], 1, -1))
     num_instances = imgs.shape[0]
     train_idg = tf.keras.preprocessing.image.ImageDataGenerator(

@@ -35,7 +35,8 @@ def nengo_dl_train():
   log.INFO("NENGO DL EXP CONFIG: %s" % ndl_cfg)
   ##############################################################################
   log.INFO("Getting the dataset: %s" % tf_cfg["dataset"])
-  train_x, train_y, _, _ = get_exp_dataset(tf_cfg["dataset"])
+  train_x, train_y, _, _ = get_exp_dataset(
+      tf_cfg["dataset"], is_nengo_dl_train_test=True)
   num_imgs = train_x.shape[0]
 
   if tf_cfg["dataset"] == MNIST:
@@ -74,7 +75,8 @@ def nengo_dl_train():
     for epoch in range(tf_cfg["epochs"]):
       log.INFO("Executing Epoch: %s ..." % epoch)
       batches = get_batches_of_exp_dataset(
-            ndl_cfg, is_test=False, channels_first=tf_cfg["is_channels_first"])
+            ndl_cfg, is_test=False, channels_first=tf_cfg["is_channels_first"],
+            is_nengo_dl_train_test=True)
       ndl_sim.fit(batches, epochs=1, steps_per_epoch=num_imgs // train_bs)
 
     log.INFO("Saving the trained model-parameters...")
@@ -97,10 +99,11 @@ def nengo_dl_test(n_test=None):
   log.INFO("Getting the Nengo-DL model...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, include_layer_probes=True)
+      max_to_avg_pool=False, include_layer_probes=False)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
-      ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"])
+      ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
+      is_nengo_dl_train_test=True)
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
@@ -114,7 +117,6 @@ def nengo_dl_test(n_test=None):
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
       all_test_imgs_pred_clss.extend(sim_data[ngo_probes_lst[-1]])
       for probe in ngo_probes_lst[1:-1]:
-        print("RG: type probe: %s" % type(probe))
         layer_probes_otpt[probe.obj.ensemble.label].extend(sim_data[probe])
       for true_lbl, pred_lbl in zip(batch[1], sim_data[ngo_probes_lst[-1]]):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
@@ -143,4 +145,4 @@ if __name__ == "__main__":
       ndl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"] + "_nengo_dl_train_",
       ndl_cfg["train_mode"]["sfr"], tf_cfg["epochs"], datetime.datetime.now()))
   nengo_dl_train()
-  nengo_dl_test(n_test=100)
+  nengo_dl_test(n_test=None)

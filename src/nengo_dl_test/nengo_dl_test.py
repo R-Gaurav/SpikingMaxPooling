@@ -46,7 +46,8 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
       max_to_avg_pool=max_to_avg_pool, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
-      ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"])
+      ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
+      is_nengo_dl_train_test=not ndl_cfg["load_tf_wts"])
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
@@ -85,7 +86,8 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
       max_to_avg_pool=False, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
-      ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"])
+      ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
+      is_nengo_dl_train_test=not ndl_cfg["load_tf_wts"])
 
   def _get_conv_layer_output_shape(layer_name):
     for layer in ndl_model.model.layers:
@@ -130,12 +132,14 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
       conn_from_pconv_to_max, conn_from_max_to_nconv = conn_tpl
       ########## GET THE CONV LAYER GROUPED SLICES FOR MAX POOLING ###########
       conv_label = conn_from_pconv_to_max.pre_obj.ensemble.label
-      (num_chnls, rows, cols) = _get_conv_layer_output_shape(conv_label)
+
       if tf_cfg["is_channels_first"]:
+        (num_chnls, rows, cols) = _get_conv_layer_output_shape(conv_label)
         grouped_slices = get_grouped_slices_2d_pooling_cf(
             pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
         output_idcs = np.arange(num_chnls * (rows//2) * (cols//2))
       else:
+        (rows, cols, num_chnls) = _get_conv_layer_output_shape(conv_label)
         grouped_slices = get_grouped_slices_2d_pooling_cl(
             pool_size=(2, 2), num_chnls=num_chnls, rows=rows, cols=cols)
         output_idcs = np.arange(num_chnls * (rows//2) * (cols//2)).reshape(
@@ -144,6 +148,9 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
         output_idcs = output_idcs.flatten()
 
       log.INFO("Grouped slices of Conv: %s for MaxPooling obtained." % conv_label)
+      if rows % 2 and cols % 2:
+        rows, cols = rows-1, cols-1
+      num_neurons = num_chnls * rows * cols
 
       # Create the MaxPool layer of multiple smaller 2x2 sub-network.
       max_pool_layer = get_max_pool_global_net(
@@ -157,10 +164,13 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
       log.INFO("Associative-Max MaxPool layer obtained.")
 
       ######### CONNECT THE PREV ENS/CONV TO ASSOCIATIVE-MAX MAXPOOL ########
+      # Set transform=None to avoid following error:
+      # "nengo.exceptions.ValidationError: Connection.transform: Transform input
+      # size (2904) not equal to Neurons output size (2400)" in case of odd rows/cols.
       nengo.Connection(
-          conn_from_pconv_to_max.pre_obj[grouped_slices],
+          conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_pool_layer.input,
-          transform=conn_from_pconv_to_max.transform,
+          transform=None, #conn_from_pconv_to_max.transform, # NoTransform
           synapse=conn_from_pconv_to_max.synapse,
           function=conn_from_pconv_to_max.function
       )
@@ -223,7 +233,8 @@ def _do_isi_based_max_pooling(inpt_shape, num_clss):
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=False, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
-  test_batches = get_batches_of_exp_dataset(ndl_cfg, is_test=True)
+  test_batches = get_batches_of_exp_dataset(
+      ndl_cfg, is_test=True, is_nengo_dl_train_test=not ndl_cfg["load_tf_wts"])
 
   # Populate ISI based MaxPooling Parameters.
   get_isi_based_max_pooling_params(ndl_model.model.layers)
@@ -354,11 +365,13 @@ def nengo_dl_test():
   """
   log.INFO("Testing in TensorNode MaxPooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False)
-
-  log.INFO("Testing in Max To Avg Pooling mode...")
-  _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
   """
 
+  """
+  log.INFO("Testing in Max To Avg Pooling mode...")
+  _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
+
+  """
   log.INFO("Testing in custom associative max mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 

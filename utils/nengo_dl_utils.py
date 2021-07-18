@@ -291,10 +291,12 @@ def get_max_pool_global_net(mp_input_size, seed=SEED, max_rate=250, radius=1,
     # nengo_dl.configure_settings(planner=noop_planner)
 
     net.input = nengo.Node(size_in=np.prod(mp_input_size))
-    if rows % 2 and cols % 2:
-      out_size = (num_chnls * (rows-1) * (cols-1))//4
-    else:
-      out_size = np.prod(mp_input_size)//4
+
+    out_size = np.prod(mp_input_size)//4
+    #if rows % 2 and cols % 2:
+    #  out_size = (num_chnls * (rows-1) * (cols-1))//4
+    #else:
+    #  out_size = np.prod(mp_input_size)//4
 
     net.output = nengo.Node(size_in=out_size)
 

@@ -30,7 +30,8 @@ def tf_train_test():
   ##############################################################################
   log.INFO("Getting the dataset: %s" % tf_cfg["dataset"])
   train_x, train_y, test_x, test_y = get_exp_dataset(
-      tf_cfg["dataset"], channels_first=tf_cfg["is_channels_first"])
+      tf_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],
+      is_nengo_dl_train_test=False)
   log.INFO("Augmenting the dataset: %s" % tf_cfg["dataset"])
   train_idg = tf.keras.preprocessing.image.ImageDataGenerator(
       width_shift_range=0.1, height_shift_range=0.1, rotation_range=20,
