@@ -1,8 +1,11 @@
 import nengo
 import nengo_loihi
+import numpy as np
 
 from utils.base_utils import log
 from utils.consts.exp_consts import SEED
+
+from configs.exp_configs import nengo_loihi_cfg as nloihi_cfg
 
 def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens):
   """
@@ -106,9 +109,9 @@ def get_loihi_adapted_avam_net_for_2x2_max_pooling(
 
     def _get_ensemble():
       ens =  nengo.Ensemble(
-          n_neurons=2, dimensions=1, encoders=[[1], [-1]], interceps=[0, 0],
-          max_rate=[max_rate, max_rate], radius=radius,
-          neuron_type=nengo_loihi.neurons.SpikingRectifiedLinear())
+          n_neurons=2, dimensions=1, encoders=[[1], [-1]], intercepts=[0, 0],
+          max_rates=[max_rate, max_rate], radius=radius,
+          neuron_type=nloihi_cfg["test_mode"]["spk_neuron"])
       return ens
 
     ens_12 = _get_ensemble() # Ensemble for max(a, b).
@@ -117,7 +120,7 @@ def get_loihi_adapted_avam_net_for_2x2_max_pooling(
 
     # Intermediate passthrough nodes for summing and outputting the result.
     node_12 = nengo.Node(size_in=1) # For max(a, b).
-    node_34 = nengo.Node(size_in=1) # For max(a, b).
+    node_34 = nengo.Node(size_in=1) # For max(c, d).
     net.output = nengo.Node(size_in=1) # For max(max(a, b), max(c, d)).
 
     ############################################################################
@@ -167,5 +170,53 @@ def get_loihi_adapted_avam_net_for_2x2_max_pooling(
       nengo.Connection(ens_1234.neurons[1], net.output, synapse=synapse,
                        transform=radius/max_rate)
     ############################################################################
+
+  return net
+
+def get_loihi_adapted_max_pool_global_net(mp_input_size, seed=SEED, max_rate=1000,
+                                          radius=0.5, sf=1, do_max=True,
+                                          synapse=None):
+  """
+  Returns the Loihi adapted global max pool net, where there are multiple small
+  max pool subnets to compute max over 4 numbers. Make sure that the flattened
+  vector input to the max pool global net is properly ordered for either
+  "channels_first" or "channels_last" order.
+
+  E.g. for "channels_first":
+      [0, 1, 4, 5, 2, 3, 6, 7, 8, 9, 12, 13, 10, 11, 14, 15, ...]
+
+  Args:
+    mp_input_size: Global size of the input over MaxPool has to be computed. If
+                   the previous Conv layer is of shape (32, 26, 26), then its
+                   value should be 32 x 26 x 26 = 21632. In case of rows and cols
+                   of the previous Conv layer being Odd, it should of shape:
+                   num_chnls * (rows-1) * (cols-1).
+    seed <int>: Any arbitray seed value.
+    max_rate <int>: Max Firing rate of the neurons.
+    radius <int>: Value at which maximum spiking rate occurs (
+                  i.e. representational radius)
+    sf <int>: Scale factor by which to scale the inputs.
+    do_max <bool>: Do MaxPooling if True else do AvgPooling.
+    synapse <float>: Synaptic time constant.
+
+  Returns:
+    nengo.Network
+  """
+  num_chnls, rows, cols = mp_input_size
+  with nengo.Network(label="loihi_custom_mp_layer", seed=seed) as net:
+    net.inputs = nengo.Node(size_in=np.prod(mp_input_size))
+    out_size = np.prod(mp_input_size)//4
+    net.output = nengo.Node(size_in=out_size)
+
+    for i in range(out_size):
+      mp_subnet = get_loihi_adapted_avam_net_for_2x2_max_pooling(
+          seed=seed, max_rate=max_rate, radius=radius, sf=sf, do_max=do_max,
+          synapse=synapse)
+      # Connect the grouped slice of 4 numbers to the `mp_subnet`. Make sure that
+      # the Connection to the `net.inputs` is already synapsed when connecting to
+      # this global max pool net, thus no need to synapse further to the subnets.
+      nengo.Connection(net.inputs[i*4 : i*4+4], mp_subnet.inputs, synapse=None)
+      # MaxPool is calculated over already synapsed inputs, so no need to synapse.
+      nengo.Connection(mp_subnet.output, net.output[i], synapse=None)
 
   return net

@@ -119,10 +119,10 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
       for lyr_obj in layer_objs_lst[1:-1]:
         #if not lyr_obj.name.startswith("max_pooling"):
         log.INFO("RG: Layer OBJ: {}, name: {}".format(lyr_obj, lyr_obj.name))
-          #if lyr_obj.name.startswith("conv2d_2"):
-        if prev_lyr_obj is not None and prev_lyr_obj.name.startswith("max_pooling"):
-          nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj],
-                                        attr="input"))
+        if lyr_obj.name.startswith("conv2d_1"):
+        #if prev_lyr_obj is not None and prev_lyr_obj.name.startswith("max_pooling"):
+          nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj][:2048]))
+                                        #attr="input"))
         prev_lyr_obj = lyr_obj
     if include_mp_layer_probes: # Only MaxPooling layers.
       for lyr_obj in layer_objs_lst[1:-1]:

@@ -16,3 +16,7 @@ NEURONS_LATEST_ISI = {}
 MAX_POOL_MASK = {}
 
 ISI_BASED_MP_PARAMS = {}
+
+AVAM = "avam"
+MJOP = "max_join_op"
+AVGP = "avg_pooling"

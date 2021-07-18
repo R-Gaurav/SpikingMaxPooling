@@ -7,7 +7,7 @@ import nengo_loihi
 import pathlib
 
 from utils.consts.dir_consts import EXP_OTPT_DIR
-from utils.consts.exp_consts import MNIST, CIFAR10
+from utils.consts.exp_consts import MNIST, CIFAR10, AVAM, MJOP, AVGP
 from utils.consts.model_consts import (
     MODEL_1, MODEL_2, MODEL_3, MODEL_4, MODEL_5, MODEL_6, MODEL_7,
     MODEL_1_AP, MODEL_2_AP, MODEL_ALL_CONV)
@@ -22,7 +22,7 @@ from .block_configs import block_shapes
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_2
+model = MODEL_1
 dataset = MNIST # One of MNIST, CIFAR10
 is_channels_first = False
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
@@ -45,10 +45,10 @@ nengo_loihi_cfg = {
   "trained_model_params": (
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
-    "n_steps": 100, # in milliseconds.
-    "n_test": 75, # Number of images to be tested.
-    "scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
-    # "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_2)
+    "n_steps": 60, # in milliseconds.
+    "n_test": 20, # Number of images to be tested.
+    #"scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
+    "scale": 1.2, # Scaling parameter of the output of root neurons. (MODEL_2)
     ################# WITH MODEL_1 and MNIST ###########################
     # scale=1.2 => 97.2
     # scale=1.1 => 96.8 on first 250 images. 97.2
@@ -68,6 +68,7 @@ nengo_loihi_cfg = {
   "layer_blockshapes": block_shapes[
       "channels_first" if is_channels_first else "channels_last"][dataset][
       model["name"]],
+  "loihi_model_type": MJOP # One of AVAM, MJOP, AVGP
 }
 
 nengo_dl_cfg = {
@@ -116,3 +117,9 @@ pathlib.Path(nengo_dl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"]).mkdir(
              parents=True, exist_ok=True)
 pathlib.Path(nengo_loihi_cfg["test_mode"]["test_mode_res_otpt_dir"]).mkdir(
     parents=True, exist_ok=True)
+pathlib.Path(nengo_loihi_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/"+AVAM
+    ).mkdir(parents=True, exist_ok=True)
+pathlib.Path(nengo_loihi_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/"+MJOP
+    ).mkdir(parents=True, exist_ok=True)
+pathlib.Path(nengo_loihi_cfg["test_mode"]["test_mode_res_otpt_dir"]+"/"+AVGP
+    ).mkdir(parents=True, exist_ok=True)

@@ -42,6 +42,7 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
   # Normalizing the dataset doesn't work well when TF training and NDL test is done.
   # But normalizing it for NengoDL Train-Test works superior than not normalizing.
   if is_nengo_dl_train_test:
+    log.INFO("Normalizing the dataset...")
     train_x = train_x.astype(np.float32) / 127.5 - 1
     test_x = test_x.astype(np.float32) / 127.5 - 1
 
@@ -56,7 +57,7 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
   train_y = np.eye(10, dtype=np.float32)[train_y].squeeze(axis=1)
   test_y = np.eye(10, dtype=np.float32)[test_y].squeeze(axis=1)
 
-  if start_idx and end_idx:
+  if start_idx is not None and end_idx is not None:
     log.INFO("Partial test data returned. Start Index: %s, End Index: %s"
              % (start_idx, end_idx))
     return train_x, train_y, test_x[start_idx:end_idx], test_y[start_idx:end_idx]

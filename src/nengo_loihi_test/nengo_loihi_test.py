@@ -21,9 +21,10 @@ from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_exp_dataset
 from utils.base_utils.exp_utils import (
     get_grouped_slices_2d_pooling_cf, get_grouped_slices_2d_pooling_cl)
-from utils.consts.exp_consts import SEED, MNIST, CIFAR10
+from utils.consts.exp_consts import SEED, MNIST, CIFAR10, AVAM, MJOP, AVGP
 from utils.nengo_dl_utils import get_nengo_dl_model
 from utils.nengo_loihi_utils import configure_ensemble_for_2x2_max_join_op
+from loihi_avam_max_pooling import _do_nengo_loihi_AVAM_MaxPooling
 
 # Ignore NengoDL warning about no GPU.
 warnings.filterwarnings("ignore", message="No GPU", module="nengo_dl")
@@ -36,7 +37,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
                                           start_idx, end_idx,
                                           include_max_jop_otpt_probes=False):
   """
-  Doest NengoLoihi test of models with MaxPooling implemented by MAX joinOp method.
+  Does NengoLoihi test of models with MaxPooling implemented by MAX joinOp method.
 
   Args:
     inpt_shape <(int, int, int)>: A tuple of Image shape with channels_first order.
@@ -50,7 +51,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   log.INFO("Getting the NengoDL model for MAX joinOp based MaxPooling...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, include_layer_probes=True)
+      max_to_avg_pool=False, include_layer_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
       nloihi_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],
@@ -238,6 +239,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
       # with number of neurons less than 1024, so no need to partition them.
 
   ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
+  log.INFO("Start testing...")
   with nengo_loihi.Simulator(ndl_model.net, seed=SEED, target="loihi") as loihi_sim:
       #precompute=False, hardware_options={ "snip_max_spikes_per_step": 12000}) as loihi_sim:
 
@@ -390,24 +392,32 @@ def nengo_loihi_test(start):
     start_idx = start*nloihi_cfg["test_mode"]["n_test"]
     end_idx = (start+1) * nloihi_cfg["test_mode"]["n_test"]
 
-    if tf_cfg["tf_model"]["name"].endswith("ap"):
+    if nloihi_cfg["loihi_model_type"] == AVGP:
       log.INFO("Testing the NengoLoihi model in AveragePooling mode...")
       acc, loihi_batch_preds = _do_nengo_loihi_average_pooling(
           inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx)
-    else:
+    elif nloihi_cfg["loihi_model_type"] == MJOP:
       log.INFO("Testing the NengoLoihi MAX joinOp MaxPooling mode...")
       acc, loihi_batch_preds, layer_probes_otpt = (
           _do_nengo_loihi_MAX_joinOP_MaxPooling(
           inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx,
-          include_max_jop_otpt_probes=True))
+          include_max_jop_otpt_probes=False))
+    elif nloihi_cfg["loihi_model_type"] == AVAM:
+      log.INFO("Testing the NengoLoihi Absolute Value Associative Max mode...")
+      acc, loihi_batch_preds, layer_probes_otpt = (
+          _do_nengo_loihi_AVAM_MaxPooling(
+          inpt_shape, num_clss, start_idx=start_idx, end_idx=end_idx,
+          include_avam_max_otpt_probes=False, do_max=True))
 
     acc_per_batch_list.append(acc)
     # Dump the accuracy result for the current batch.
     np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
-            "/Acc_and_preds_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
+            "/%s/Acc_and_preds_batch_start_%s_end_%s.npy" % (
+            nloihi_cfg["loihi_model_type"], start_idx, end_idx),
             (acc, loihi_batch_preds))
     np.save(nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
-            "/Layer_probes_otpt_batch_start_%s_end_%s.npy" % (start_idx, end_idx),
+            "/%s/Layer_probes_otpt_batch_start_%s_end_%s.npy" % (
+            nloihi_cfg["loihi_model_type"], start_idx, end_idx),
             layer_probes_otpt)
 
     log.INFO("Batch: [%s, %s) Done!" % (start_idx, end_idx))
@@ -428,7 +438,8 @@ if __name__ == "__main__":
 
   log.configure_log_handler(
     "%s_start_%s_sfr_%s_n_steps_%s_synapse_%s_timestamp_%s.log" % (
-    nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] + "_nengo_loihi_test_",
+    nloihi_cfg["test_mode"]["test_mode_res_otpt_dir"] +
+    "/" + nloihi_cfg["loihi_model_type"] + "/nengo_loihi_test_",
     args.start, nloihi_cfg["test_mode"]["sfr"], nloihi_cfg["test_mode"]["n_steps"],
     nloihi_cfg["test_mode"]["synapse"], datetime.datetime.now()))
   nengo_loihi_test(args.start)
