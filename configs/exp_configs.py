@@ -24,7 +24,7 @@ from .block_configs import block_shapes
 
 model = MODEL_1
 dataset = MNIST # One of MNIST, CIFAR10
-is_channels_first = False
+is_channels_first = True
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
