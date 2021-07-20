@@ -148,6 +148,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
         ),
         label="max_join_op_ens_%s" % i
       )
+      max_join_op_ens_list.append(max_join_op_ens)
       # Probing selected neurons of Max-JoinOP Ensemble results in following error:
       """
       nengo.exceptions.SimulationError: Board connection error: A source compartment can only connect to either discrete axons or population axons, but not both types. Note that spike probes require a discrete axon.
@@ -158,7 +159,6 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
       #      max_join_op_ens.neurons[[i for i in range(num_neurons) if i%4==3]],
       #      #max_join_op_ens.neurons[:20],
       #      synapse=None))
-      #  max_join_op_ens_list.append(max_join_op_ens)
 
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
       if tf_cfg["is_channels_first"]:
@@ -259,6 +259,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   #    print("$"*80)
   ##############################################################################
     for max_join_op_ens in max_join_op_ens_list:
+      log.INFO("Configuring the MAX JoinOP Ensemble: %s" % max_join_op_ens)
       configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens)
     loihi_sim.run(nloihi_cfg["test_mode"]["n_test"] * pres_time)
 

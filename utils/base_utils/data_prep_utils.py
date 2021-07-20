@@ -41,10 +41,10 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
   # Normalize the images in range [-1, 1]
   # Normalizing the dataset doesn't work well when TF training and NDL test is done.
   # But normalizing it for NengoDL Train-Test works superior than not normalizing.
-  #if is_nengo_dl_train_test:
-  #  log.INFO("Normalizing the dataset...")
-  #  train_x = train_x.astype(np.float32) / 127.5 - 1
-  #  test_x = test_x.astype(np.float32) / 127.5 - 1
+  if is_nengo_dl_train_test:
+    log.INFO("Normalizing the dataset...")
+    train_x = train_x.astype(np.float32) / 127.5 - 1
+    test_x = test_x.astype(np.float32) / 127.5 - 1
 
 
   # Default image data format is "channels_last", change the image data to
