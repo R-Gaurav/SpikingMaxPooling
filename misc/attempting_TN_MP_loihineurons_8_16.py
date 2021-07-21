@@ -11,7 +11,7 @@ import nengo_loihi
 
 import _init_paths
 
-from utils.base_utils.exp_utils import get_grouped_slices_2d_pooling
+from utils.base_utils.exp_utils import get_grouped_slices_2d_pooling_cf
 from utils.nengo_dl_utils import configure_ensemble_for_2x2_max_join_op
 
 # ignore NengoDL warning about no GPU
@@ -124,7 +124,7 @@ print("Conn from MaxPooling to Next Conv: {}, Transform: {}, Synapse: {}, "
 print("Transform: {}".format(dir(conn_from_max_to_nconv.transform)))
 
 NUM_CHNLS, ROWS, COLS = 8, 26, 26
-grouped_slices = get_grouped_slices_2d_pooling(
+grouped_slices = get_grouped_slices_2d_pooling_cf(
     pool_size=(2, 2), num_chnls=NUM_CHNLS, rows=ROWS, cols=COLS)
 NUM_NEURONS = NUM_CHNLS * ROWS * COLS
 
