@@ -6,6 +6,7 @@
 
 import nengo
 import nengo_dl
+import nengo_loihi
 import numpy as np
 import random
 
@@ -51,7 +52,7 @@ def _do_nengo_loihi_AVAM_MaxPooling(inpt_shape, num_clss, start_idx, end_idx,
       max_to_avg_pool=False, include_layer_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
-      nloihi_cfg["dataset"], channels_firs=tf_cfg["is_channels_first"],
+      nloihi_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],
       start_idx=start_idx, end_idx=end_idx, is_nengo_dl_train_test=True)
   # Flatten `test_x`.
   print("RG: test_x shape: {}".format(test_x.shape))

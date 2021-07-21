@@ -103,6 +103,17 @@ def get_loihi_adapted_avam_net_for_2x2_max_pooling(
     sf <int>: The scale factor.
     do_max <bool>: Do MaxPooling if True else do AvgPooling.
     synapse <float>: Synapic time constant.
+
+  Note: Using the one defined for NengoDL results in following error when deployed
+        on Loihi.
+        "NotImplementedError: Mergeable transforms must be Dense;
+        set remove_passthrough=False"
+        #######################################################################
+
+        Upon setting `remove_passthrough=False` in nengo_loihi.Simulator():
+        "nengo.exceptions.BuildError: Conv2D transforms not supported for off-chip
+        to on-chip connections where `pre` is not a Neurons object."
+        #######################################################################
   """
   with nengo.Network(seed=seed) as net:
     net.inputs = nengo.Node(size_in=4) # 4 dimensional input for 2x2 MaxPooling.
@@ -121,7 +132,12 @@ def get_loihi_adapted_avam_net_for_2x2_max_pooling(
     # Intermediate passthrough nodes for summing and outputting the result.
     node_12 = nengo.Node(size_in=1) # For max(a, b).
     node_34 = nengo.Node(size_in=1) # For max(c, d).
-    net.output = nengo.Node(size_in=1) # For max(max(a, b), max(c, d)).
+    otp_node = nengo.Node(size_in=1) # For max(max(a, b), max(c, d)).
+    net.otpt_neuron = nengo.Ensemble(
+        n_neurons=1, dimensions=1, radius=1, intercepts=[0], max_rates=[1000],
+        # Note that `max_rates` vary with Simulator (250 in Nengo, 1000 in nengo_loihi)
+        neuron_type=nengo_loihi.neurons.LoihiSpikingRectifiedLinear(amplitude=1/1000)
+    )
 
     ############################################################################
     # Calculate max(a, b) = (a+b)/2 + |a-b|/2.
@@ -158,18 +174,23 @@ def get_loihi_adapted_avam_net_for_2x2_max_pooling(
     ############################################################################
     # Calculate max(a, b, c, d) = max(max(a, b), max(c, d)).
     # Calculate (node_12 + node_34)/2.
-    nengo.Connection(node_12, net.output, synapse=synapse, transform=sf/2)
-    nengo.Connection(node_34, net.output, synapse=synapse, transform=sf/2)
+    nengo.Connection(node_12, otp_node, synapse=synapse, transform=sf/2)
+    nengo.Connection(node_34, otp_node, synapse=synapse, transform=sf/2)
 
     if do_max:
       # Calculate |node_12 - node_34|/2.
       nengo.Connection(node_12, ens_1234, synapse=synapse, transform=sf/2)
       nengo.Connection(node_34, ens_1234, synapse=synapse, transform=-sf/2)
-      nengo.Connection(ens_1234.neurons[0], net.output, synapse=synapse,
+      nengo.Connection(ens_1234.neurons[0], otp_node, synapse=synapse,
                        transform=radius/max_rate)
-      nengo.Connection(ens_1234.neurons[1], net.output, synapse=synapse,
+      nengo.Connection(ens_1234.neurons[1], otp_node, synapse=synapse,
                        transform=radius/max_rate)
     ############################################################################
+
+    ############################################################################
+    # Connect the output Node to the output neuron which acts as a relay neuron.
+    # The output from the Node is already synpased, so no further synpasing.
+    nengo.Connection(otp_node, net.otpt_neuron.neurons, synapse=None)
 
   return net
 
@@ -216,7 +237,8 @@ def get_loihi_adapted_max_pool_global_net(mp_input_size, seed=SEED, max_rate=100
       # the Connection to the `net.inputs` is already synapsed when connecting to
       # this global max pool net, thus no need to synapse further to the subnets.
       nengo.Connection(net.inputs[i*4 : i*4+4], mp_subnet.inputs, synapse=None)
-      # MaxPool is calculated over already synapsed inputs, so no need to synapse.
-      nengo.Connection(mp_subnet.output, net.output[i], synapse=None)
+      # MaxPool is calculated over already synapsed inputs, however, the output
+      # is obtained from a neuron, therefore synapse the outputs.
+      nengo.Connection(mp_subnet.otpt_neuron.neurons, net.output[i], synapse=0.005)
 
   return net

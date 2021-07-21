@@ -22,7 +22,7 @@ from .block_configs import block_shapes
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_1
+model = MODEL_2
 dataset = MNIST # One of MNIST, CIFAR10
 is_channels_first = True
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
@@ -68,7 +68,7 @@ nengo_loihi_cfg = {
   "layer_blockshapes": block_shapes[
       "channels_first" if is_channels_first else "channels_last"][dataset][
       model["name"]],
-  "loihi_model_type": MJOP # One of AVAM, MJOP, AVGP
+  "loihi_model_type": AVAM # One of AVAM, MJOP, AVGP
 }
 
 nengo_dl_cfg = {
