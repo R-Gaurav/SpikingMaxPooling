@@ -23,8 +23,8 @@ from .block_configs import block_shapes
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
 model = MODEL_2
-dataset = MNIST # One of MNIST, CIFAR10
-is_channels_first = True
+dataset = CIFAR10 # One of MNIST, CIFAR10
+is_channels_first = False
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
@@ -45,10 +45,10 @@ nengo_loihi_cfg = {
   "trained_model_params": (
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
-    "n_steps": 40, # in milliseconds.
-    "n_test": 200, # Number of images to be tested.
-    #"scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
-    "scale": 1, # Scaling parameter of the output of root neurons. (MODEL_2)
+    "n_steps": 60, # in milliseconds. (40, 50 for MNIST)
+    "n_test": 50, # Number of images to be tested.
+    "scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
+    #"scale": 1, # Scaling parameter of the output of root neurons. (MODEL_2)
     ################# WITH MODEL_1 and MNIST ###########################
     # scale=1.2 => 97.2
     # scale=1.1 => 96.8 on first 250 images. 97.2
@@ -68,7 +68,7 @@ nengo_loihi_cfg = {
   "layer_blockshapes": block_shapes[
       "channels_first" if is_channels_first else "channels_last"][dataset][
       model["name"]],
-  "loihi_model_type": AVAM # One of AVAM, MJOP, AVGP
+  "loihi_model_type": MJOP # One of AVAM, MJOP, AVGP
 }
 
 nengo_dl_cfg = {

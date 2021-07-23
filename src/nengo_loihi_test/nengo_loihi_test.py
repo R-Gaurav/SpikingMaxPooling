@@ -161,14 +161,21 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
       #      synapse=None))
 
       # Set the BlockShape of `max_join_op_ens` on Loihi Neurocore.
-      if tf_cfg["is_channels_first"]:
-        ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-            (1, rows, cols), (num_chnls, rows, cols))
-      else:
-        ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-            (rows, cols, 1), (rows, cols, num_chnls))
+      ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
+          (rows*cols, ), (num_chnls*rows*cols, ))
+          #(1, rows, cols), (num_chnls, rows, cols))
+
+      ##########################################################################
+      #if tf_cfg["is_channels_first"]:
+      #  ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
+      #      #(1, rows, cols), (num_chnls, rows, cols))
+      #      (rows*cols, ), (num_chnls*rows*cols, ))
+      #else:
+      #  ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
+      #      (rows*cols, ), (num_chnls*rows*cols, ))
           #(1, rows, cols), (num_chnls, rows, cols)) # Results in 100% acc in 40 n_steps in MODEL_2.
           #(16, 8, 8), (num_chnls, rows, cols)) # Results is 95% acc in 40 and 50 n_steps in MODEL_2.
+      ##########################################################################
 
       if tf_cfg["is_channels_first"]:
         output_idcs = [i for i in range(num_neurons) if i%4==3]
