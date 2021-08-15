@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=01:00:00
+#SBATCH --time=03:00:00
 #SBATCH --account=def-anarayan
 #SBATCH --nodes=1
 #SBATCH --mem=32G
@@ -10,4 +10,4 @@ export TEMP=$SLURM_TMPDIR
 export TMP=$SLURM_TMPDIR
 export TEMPDIR=$SLURM_TMPDIR
 export TMPDIR=$SLURM_TMPDIR
-python nengo_dl_test.py
+python nengo_dl_test.py --load_tf_wts=False

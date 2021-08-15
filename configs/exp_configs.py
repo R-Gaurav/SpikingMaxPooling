@@ -22,16 +22,16 @@ from .block_configs import block_shapes
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_2
-dataset = MNIST # One of MNIST, CIFAR10
-is_channels_first = False
+model = MODEL_1
+dataset = CIFAR10 # One of MNIST, CIFAR10
+is_channels_first = True # False for Model 7.
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 tf_exp_cfg = {
   "is_channels_first": is_channels_first,
   "batch_size": 100,
   "dataset": dataset,
-  "epochs": 8 if dataset == MNIST else 32, # 160
+  "epochs": 8 if dataset == MNIST else 64, # 64, 160
   "lr": 1e-3,
   "nn_dlyr": 128,
   "tf_model": model,
@@ -82,7 +82,7 @@ nengo_dl_cfg = {
     "spk_neuron": nengo_loihi.neurons.LoihiSpikingRectifiedLinear(),
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 60, # 80 required for a deeper MODEL_7
+    "n_steps": 50, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"

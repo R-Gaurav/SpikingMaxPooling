@@ -80,10 +80,15 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
     num_clss <int>: Number of test classes.
     do_max <bool>: Do associative max pooling if True, else do associative avg.
   """
+  log.INFO("Testing in custom associative max mode...")
   log.INFO("Getting the Nengo-DL model with loaded TF trained weights...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=False, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
+  with nengo_dl.Simulator(ndl_model.net, seed=SEED) as ndl_sim:
+    ndl_sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
+                        #"/attempting_TN_MP_loihineurons_8_16")
+    ndl_sim.freeze_params(ndl_model.net)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
       ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
@@ -156,8 +161,10 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
       max_pool_layer = get_max_pool_global_net(
           (num_chnls, rows, cols), seed=SEED,
           max_rate=250, #am_cfg[conv_label]["max_rate"],
-          radius=3, #am_cfg[conv_label]["radius"],
-          sf=1.2, #am_cfg[conv_label]["sf"],
+          #radius=3, #am_cfg[conv_label]["radius"],
+          radius=0.25, #am_cfg[conv_label]["radius"],
+          #sf=1.2, #am_cfg[conv_label]["sf"],
+          sf=1, #am_cfg[conv_label]["sf"],
           synapse=0.001, #am_cfg[conv_label]["synapse"],
           do_max=do_max
           )
@@ -204,6 +211,8 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
       progress_bar=True) as sim:
+    #if not ndl_cfg["load_tf_wts"]:
+    #  sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
     log.INFO("Nengo-DL model with associative-max max pooling layer compiled.")
     acc, n_test_imgs = 0, 0
     for batch in test_batches:
@@ -372,7 +381,6 @@ def nengo_dl_test():
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   """
-  log.INFO("Testing in custom associative max mode...")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
   """
@@ -385,9 +393,10 @@ def nengo_dl_test():
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
-  parser.add_argument("--load_tf_wts", type=bool, required=True,
+  parser.add_argument("--load_tf_wts", type=str, required=True,
                       help="Loads TF weights if True else loads NDL weights.")
   args = parser.parse_args()
+  load_tf_wts = True if args.load_tf_wts=="True" else False
 
   log.configure_log_handler(
       "%s_sfr_%s_n_steps_%s_synapse_%s_%s.log" % (
@@ -395,8 +404,8 @@ if __name__ == "__main__":
       ndl_cfg["test_mode"]["sfr"], ndl_cfg["test_mode"]["n_steps"],
       ndl_cfg["test_mode"]["synapse"], datetime.datetime.now()))
 
-  if args.load_tf_wts:
+  if load_tf_wts:
     ndl_cfg["test_mode"]["sfr"] = 100
     ndl_cfg["test_mode"]["spk_neuron"] = nengo.SpikingRectifiedLinear()
-  ndl_cfg["load_tf_wts"] = args.load_tf_wts
+  ndl_cfg["load_tf_wts"] = load_tf_wts
   nengo_dl_test()
