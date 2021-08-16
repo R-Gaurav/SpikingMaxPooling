@@ -436,8 +436,8 @@ def nengo_loihi_test(start):
       log.INFO("Infernce over all test images done.")
       break
 
-    if start==1: # To check for a single run overs MODELs.
-      break
+    #if start==1: # To check for a single run overs MODELs.
+    #  break
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
