@@ -12,7 +12,7 @@ from collections import Counter
 from utils.consts.dir_consts import EXP_OTPT_DIR
 from utils.base_utils.data_prep_utils import get_exp_dataset
 
-def read_nengo_loihi_results(dataset, model_name):
+def read_nengo_loihi_results(dataset, model_name, directory):
   """
   Returns the accuracy over all the batches of NengoLoihi predicted classes in
   files: Acc_and_preds_batch_start_<start_idx>_end_<end_idx>.npy. Also returns
@@ -21,8 +21,10 @@ def read_nengo_loihi_results(dataset, model_name):
   Args:
     dataset <str>: One of MNIST or CIFAR10.
     model_name <str>: Experiment model's name.
+    directory <str>: One of "scale_x_y" where x and y are integers.
   """
-  results_dir = EXP_OTPT_DIR + "/%s/%s/nengo_loihi_otpts/" % (dataset, model_name)
+  results_dir = (EXP_OTPT_DIR + "/%s/%s/nengo_loihi_otpts/max_join_op/%s/" % (
+                 dataset, model_name, directory))
   files = os.listdir(results_dir)
   _, _, _, test_y = get_exp_dataset(dataset)
   test_img_idcs_set = set(np.arange(0, test_y.shape[0]))
@@ -39,7 +41,7 @@ def read_nengo_loihi_results(dataset, model_name):
       img_idcs_set = set(np.arange(start_idx, end_idx))
       test_img_idcs_set -= img_idcs_set
 
-  print(matched/total, test_img_idcs_set)
+  return (matched/total, test_img_idcs_set)
 
 def get_majority_voted_class(class_otpt_matrix, last_tsteps):
   """
@@ -79,6 +81,10 @@ def get_accuracy_via_majority_voting(class_otpt_matrix, last_tsteps, dataset,
     float: Accuracy.
   """
   _, _, _, test_y = get_exp_dataset(dataset, start_idx=start_idx, end_idx=end_idx)
+  # Make sure last dimension is number of classes.
+  assert class_otpt_matrix.shape[-1] == test_y.shape[1]
+  # Make sure that the number of rows in class_otpt_matrix = number of test imgs.
+  assert class_otpt_matrix.shape[0] == test_y.shape[0]
   pred_clss = get_majority_voted_class(class_otpt_matrix, last_tsteps)
   return 100 * np.mean(pred_clss == np.argmax(test_y, axis=-1))
 
@@ -127,3 +133,18 @@ def get_loihi_probes_output(probe_otpt, pres_steps):
     ret[layer] = lst
 
   return ret
+
+def get_layer_probes_output_dict(dataset, model_name, start_idx, end_idx, n_steps,
+                                 directory):
+  """
+  Constructs output matrix of shape (num_imgs, n_steps, num_neurons)
+  """
+  results_dir = (EXP_OTPT_DIR + "/%s/%s/nengo_loihi_otpts/max_join_op/%s/" % (
+                 dataset, model_name, directory))
+  f = np.load(results_dir + "Layer_probes_otpt_batch_start_%s_end_%s.npy" % (
+              start_idx, end_idx), allow_pickle=True)
+  prb_otpt = get_loihi_probes_output(f, n_steps)
+  for layer in prb_otpt.keys():
+    prb_otpt[layer] = np.array(prb_otpt[layer])
+
+  return prb_otpt
