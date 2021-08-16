@@ -17,12 +17,12 @@ import _init_paths
 #from nengo_dl.graph_optimizer import noop_planner
 
 from configs.exp_configs import (
-    nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg, asctv_max_cfg as am_cfg)
+    nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg) #, asctv_max_cfg as am_cfg)
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_batches_of_exp_dataset
 from utils.base_utils.exp_utils import (get_grouped_slices_2d_pooling_cf,
     get_grouped_slices_2d_pooling_cl, get_isi_based_max_pooling_params)
-from utils.consts.exp_consts import SEED, MNIST, CIFAR10
+from utils.consts.exp_consts import SEED, MNIST, CIFAR10, FMNIST
 from utils.nengo_dl_utils import (get_nengo_dl_model, get_max_pool_global_net,
                                   get_isi_based_maximally_spiking_mask)
 
@@ -162,7 +162,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
           (num_chnls, rows, cols), seed=SEED,
           max_rate=250, #am_cfg[conv_label]["max_rate"],
           #radius=3, #am_cfg[conv_label]["radius"],
-          radius=0.25, #am_cfg[conv_label]["radius"],
+          radius=ndl_cfg["test_mode"]["radius"], #am_cfg[conv_label]["radius"],
           #sf=1.2, #am_cfg[conv_label]["sf"],
           sf=1, #am_cfg[conv_label]["sf"],
           synapse=0.001, #am_cfg[conv_label]["synapse"],
@@ -356,11 +356,11 @@ def nengo_dl_test():
   """
   log.INFO("TF CONFIG: %s" % tf_cfg)
   log.INFO("NENGO DL CONFIG: %s" % ndl_cfg)
-  log.INFO("ASSOCIATIVE MAX CONFIG: %s" % am_cfg)
+  #log.INFO("ASSOCIATIVE MAX CONFIG: %s" % am_cfg)
   assert ndl_cfg["dataset"] == tf_cfg["dataset"]
 
   ##############################################################################
-  if ndl_cfg["dataset"] == MNIST:
+  if ndl_cfg["dataset"] == MNIST or ndl_cfg["dataset"] == FMNIST:
     inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
   elif ndl_cfg["dataset"] == CIFAR10:
@@ -371,16 +371,15 @@ def nengo_dl_test():
 
   log.INFO("*"*100)
 
-  """
   log.INFO("Testing in TensorNode MaxPooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False)
-  """
 
   """
   log.INFO("Testing in Max To Avg Pooling mode...")
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   """
+  log.INFO("Testing in AVAM Mode with do_max=True")
   _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
   """

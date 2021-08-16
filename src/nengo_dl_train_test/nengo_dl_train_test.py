@@ -20,7 +20,7 @@ from utils.base_utils import log
 from utils.base_utils.data_prep_utils import (
     get_exp_dataset, get_batches_of_exp_dataset)
 from utils.nengo_dl_utils import get_nengo_dl_model, percentile_l2_loss_range
-from utils.consts.exp_consts import SEED, MNIST, CIFAR10
+from utils.consts.exp_consts import SEED, MNIST, CIFAR10, FMNIST
 
 # Set the SEED.
 tf.random.set_seed(SEED)
@@ -39,7 +39,7 @@ def nengo_dl_train():
       tf_cfg["dataset"], is_nengo_dl_train_test=True)
   num_imgs = train_x.shape[0]
 
-  if tf_cfg["dataset"] == MNIST:
+  if tf_cfg["dataset"] == MNIST or tf_cfg["dataset"] == FMNIST:
     inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
   elif tf_cfg["dataset"] == CIFAR10:
@@ -89,7 +89,7 @@ def nengo_dl_test(n_test=None):
   """
   Does Nengo-DL testing with TensorNode MaxPooling.
   """
-  if tf_cfg["dataset"] == MNIST:
+  if tf_cfg["dataset"] == MNIST or tf_cfg["dataset"] == FMNIST:
     inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
   elif tf_cfg["dataset"] == CIFAR10:

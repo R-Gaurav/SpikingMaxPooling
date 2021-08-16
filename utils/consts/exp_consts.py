@@ -5,6 +5,7 @@
 SEED = 0
 MNIST = "mnist"
 CIFAR10 = "cifar10"
+FMNIST = "fashion_mnist"
 NUM_X = 4 # Default number of elements in the MaxPooling pool matrix.
 
 # Following variables NEURONS_LAST_SPIKED_TS, NEURONS_LATEST_ISI, MAX_POOL_MASK

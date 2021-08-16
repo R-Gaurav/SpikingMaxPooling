@@ -15,7 +15,7 @@ from configs.exp_configs import tf_exp_cfg as tf_cfg
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_exp_dataset
 from utils.cnn_2d_utils import get_2d_cnn_model
-from utils.consts.exp_consts import SEED, MNIST, CIFAR10
+from utils.consts.exp_consts import SEED, MNIST, CIFAR10, FMNIST
 
 # Set the SEED.
 tf.random.set_seed(SEED)
@@ -39,7 +39,7 @@ def tf_train_test():
       "is_channels_first"] else "channels_last")
   train_idg.fit(train_x, seed=SEED)
 
-  if tf_cfg["dataset"] == MNIST:
+  if tf_cfg["dataset"] == MNIST or tf_cfg["dataset"] == FMNIST:
     inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
   elif tf_cfg["dataset"] == CIFAR10:

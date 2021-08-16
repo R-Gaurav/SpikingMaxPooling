@@ -8,7 +8,7 @@ from . import log
 
 import _init_paths
 
-from utils.consts.exp_consts import MNIST, CIFAR10, SEED
+from utils.consts.exp_consts import MNIST, CIFAR10, FMNIST, SEED
 from utils.base_utils.exp_utils import get_shuffled_lists_in_unison
 
 def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
@@ -34,6 +34,11 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
   elif dataset == MNIST:
     log.INFO("Getting MNIST dataset...")
     (train_x, train_y), (test_x, test_y) = tf.keras.datasets.mnist.load_data()
+    train_x, test_x = np.expand_dims(train_x, -1), np.expand_dims(test_x, -1)
+    train_y, test_y = np.expand_dims(train_y, -1), np.expand_dims(test_y, -1)
+  elif dataset == FMNIST:
+    log.INFO("Getting FMNIST dataset...")
+    (train_x, train_y), (test_x, test_y) = tf.keras.datasets.fashion_mnist.load_data()
     train_x, test_x = np.expand_dims(train_x, -1), np.expand_dims(test_x, -1)
     train_y, test_y = np.expand_dims(train_y, -1), np.expand_dims(test_y, -1)
 

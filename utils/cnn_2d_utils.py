@@ -138,8 +138,8 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
   x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
   x = _get_dense_block(x, tf_cfg["nn_dlyr"], layer_objs_lst)
-  if include_dropout:
-    x = _get_dropout_block(x, 0.5, layer_objs_lst)
+  #if include_dropout:
+  #  x = _get_dropout_block(x, 0.5, layer_objs_lst)
   # Add the final output Dense block.
   # output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
   # Presence of "softmax" activation results in formation of `TensorNode` and
