@@ -23,8 +23,8 @@ from .block_configs import block_shapes
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
 model = MODEL_1
-dataset = FMNIST # One of MNIST, CIFAR10
-is_channels_first = False # False for Model 7 (CIFAR10), and FMNIST ( all models)
+dataset = CIFAR10 # One of MNIST, CIFAR10
+is_channels_first = True # False for Model 7 (CIFAR10), and FMNIST ( all models)
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 # FMNIST: False, MODEL_1 -> 24 | False, MODEL_2 -> 64
@@ -85,7 +85,7 @@ nengo_dl_cfg = {
     "radius": 0.25,
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 60, # 80 required for a deeper MODEL_7
+    "n_steps": 50, # 80 required for a deeper MODEL_7
     "test_batch_size": 100,
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"

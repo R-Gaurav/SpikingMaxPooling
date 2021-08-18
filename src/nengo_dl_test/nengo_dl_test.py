@@ -15,6 +15,7 @@ import random
 import _init_paths
 
 #from nengo_dl.graph_optimizer import noop_planner
+from collections import defaultdict
 
 from configs.exp_configs import (
     nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg) #, asctv_max_cfg as am_cfg)
@@ -43,7 +44,8 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
   log.INFO("Getting the Nengo-DL model with loaded TF trained weights...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=max_to_avg_pool, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
+      max_to_avg_pool=max_to_avg_pool, load_tf_trained_wts=ndl_cfg["load_tf_wts"],
+      include_layer_probes=True)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
       ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
@@ -56,17 +58,26 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
       sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
 
     acc, n_test_imgs = 0, 0
+    layer_probes_otpt = defaultdict(list)
     for batch in test_batches:
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
+      # Collect the intermediate layers spike/synapsed output.
+      for probe in ngo_probes_lst[1:-1]:
+        layer_probes_otpt[probe.obj.ensemble.label].extend(sim_data[probe])
       for true_lbl, pred_lbl in zip(batch[1], sim_data[ngo_probes_lst[-1]]):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
         n_test_imgs += 1
-        # TODO: Collect the intermediate layers spike/synapsed output.
+      if n_test_imgs == 1000: # For quick check, comment if run for entire data.
+        break
 
     log.INFO("Testing done! Writing max_to_avg_pool: %s test accuracy results "
              "in log..." % max_to_avg_pool)
     log.INFO("Nengo-DL Test Accuracy: %s" % (acc/n_test_imgs))
+    if layer_probes_otpt:
+      log.INFO("Saving intermediate probes output...")
+      np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+
+              "/layer_probes_otpt.npy", layer_probes_otpt)
     #TODO: Delete the `ndl_model` to reclaim GPU memory.
     log.INFO("*"*100)
 
@@ -379,8 +390,8 @@ def nengo_dl_test():
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   """
-  log.INFO("Testing in AVAM Mode with do_max=True")
-  _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
+  #log.INFO("Testing in AVAM Mode with do_max=True")
+  #_do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
   """
   log.INFO("Testing in custom associative avg mode...")
