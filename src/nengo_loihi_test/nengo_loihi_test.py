@@ -21,7 +21,7 @@ from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_exp_dataset
 from utils.base_utils.exp_utils import (
     get_grouped_slices_2d_pooling_cf, get_grouped_slices_2d_pooling_cl)
-from utils.consts.exp_consts import SEED, MNIST, CIFAR10, AVAM, MJOP, AVGP
+from utils.consts.exp_consts import SEED, MNIST, CIFAR10, FMNIST, AVAM, MJOP, AVGP
 from utils.nengo_dl_utils import get_nengo_dl_model
 from utils.nengo_loihi_utils import configure_ensemble_for_2x2_max_join_op
 from loihi_avam_max_pooling import _do_nengo_loihi_AVAM_MaxPooling
@@ -51,7 +51,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   log.INFO("Getting the NengoDL model for MAX joinOp based MaxPooling...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, include_layer_probes=False)
+      max_to_avg_pool=False, include_layer_probes=True)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
       nloihi_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],
@@ -382,7 +382,7 @@ def nengo_loihi_test(start):
   assert nloihi_cfg["dataset"] == tf_cfg["dataset"]
 
   ###############################################################################
-  if nloihi_cfg["dataset"] == MNIST:
+  if nloihi_cfg["dataset"] == MNIST or nloihi_cfg["dataset"] == FMNIST:
     inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
     num_clss = 10
     num_test_imgs = 10000

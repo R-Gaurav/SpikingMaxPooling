@@ -22,7 +22,7 @@ from .block_configs import block_shapes
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_2
+model = MODEL_1
 dataset = FMNIST # One of MNIST, CIFAR10
 is_channels_first = False # False for Model 7 (CIFAR10), and FMNIST ( all models)
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
@@ -48,7 +48,7 @@ nengo_loihi_cfg = {
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
     "n_steps": 50, # in milliseconds. (40, 50 for MNIST) (50, 60 for CIFAR10)
-    "n_test": 100, # Number of images to be tested.
+    "n_test": 20, # Number of images to be tested.
     #"scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
     "scale": 1, # Scaling parameter of the output of root neurons. (MODEL_2)
     ################# WITH MODEL_1 and MNIST ###########################
