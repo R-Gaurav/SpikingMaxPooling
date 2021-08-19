@@ -148,3 +148,47 @@ def get_layer_probes_output_dict(dataset, model_name, start_idx, end_idx, n_step
     prb_otpt[layer] = np.array(prb_otpt[layer])
 
   return prb_otpt
+
+def get_isi(array):
+  """
+  Returns:
+    [3, 3, 3, 4, 3, 3, 4, 3, 3, 3, 3, 4, 3,...]
+  """
+  t = 0
+  isi_lst = []
+  for i, k in enumerate(array):
+    if k!=0 and t==0:
+      t = i
+      # If the neuron has spiked only once, there is no ISI for it.
+    elif k!=0:
+      isi_lst.append(i-t)
+      t = i
+
+  return isi_lst
+
+def get_isi_distribution(model_name, dataset):
+  """
+  Prepares the ISI distribution of each image and merges them.
+  """
+  layers_otpts = np.load(
+      EXP_OTPT_DIR + "%s/%s/ndl_train_test_results/ndl_test_only_results/"
+      "layer_probes_otpt.npy" % (dataset, model_name), allow_pickle=True).item()
+  print("Keys in Layers Otpts Dict: ", layers_otpts.keys())
+  ret_dict = {}
+  for key in list(layers_otpts.keys()):
+    layer_otpts = layers_otpts[key]
+    num_imgs = len(layer_otpts)
+    isi_counter = Counter()
+    print("Length of Layer Otpts marix: {}".format(len(layer_otpts)))
+    print("Shape of first element of Layer Otpts: {}".format(
+          layer_otpts[0].shape))
+    for i in range(num_imgs): # For each image.
+      neurons_isi = []
+      for neuron in range(layer_otpts[i].shape[1]):
+        isi_lst = get_isi(layer_otpts[i][:, neuron])
+        if isi_lst:
+          neurons_isi.append(int(np.mean(isi_lst)))
+      isi_counter += Counter(neurons_isi)
+    ret_dict[key] = isi_counter
+
+  return ret_dict, num_imgs

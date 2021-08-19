@@ -19,6 +19,15 @@ def get_groups_of_poisson_distributed_isi(mu, size, num_groups, seed=0):
 
   return ret, isi_poisson
 
+def get_groups_of_isi_from_given_isi_dist(isi_vals, isi_counts, num_groups, seed=0):
+  np.random.seed(seed)
+  isi_probs = np.array(isi_counts) / np.sum(isi_counts)
+  ret = []
+  for _ in range(num_groups):
+    ret.append(random.choices(isi_vals, weights=isi_probs, k=4))
+
+  return ret
+
 def plot_distplot(isi_poisson, font_size, file_name):
   plt.figure(figsize=(4, 4))
   ax = sbn.distplot(isi_poisson,
@@ -33,6 +42,15 @@ def plot_distplot(isi_poisson, font_size, file_name):
   ax.tick_params(labelsize=font_size)
   ax.set_xlabel('ISI', fontsize=font_size)
   ax.set_ylabel('Frequency', fontsize=font_size)
+  plt.savefig(file_name, dpi=450, bbox_inches = "tight")
+
+def plot_barplot(xs, heights, font_size, file_name):
+  plt.figure(figsize=(4, 4))
+  ax = plt.bar(xs, heights, color='skyblue')
+  plt.xticks(fontsize=font_size)
+  plt.yticks(fontsize=font_size)
+  plt.xlabel('ISI', fontsize=font_size)
+  plt.ylabel('Mean Frequency', fontsize=font_size)
   plt.savefig(file_name, dpi=450, bbox_inches = "tight")
 
 def plot_sctrplot(x1, x2, x3, y, s1, s2, s3, font_size, lgnd_str, file_name):
