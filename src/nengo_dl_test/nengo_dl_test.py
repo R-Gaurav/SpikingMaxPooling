@@ -45,7 +45,7 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=max_to_avg_pool, load_tf_trained_wts=ndl_cfg["load_tf_wts"],
-      include_layer_probes=True)
+      include_layer_probes=False)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
       ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
@@ -221,7 +221,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
-      progress_bar=True) as sim:
+      progress_bar=False) as sim:
     #if not ndl_cfg["load_tf_wts"]:
     #  sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
     log.INFO("Nengo-DL model with associative-max max pooling layer compiled.")
@@ -390,8 +390,8 @@ def nengo_dl_test():
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   """
-  #log.INFO("Testing in AVAM Mode with do_max=True")
-  #_do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
+  log.INFO("Testing in AVAM Mode with do_max=True")
+  _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
   """
   log.INFO("Testing in custom associative avg mode...")

@@ -8,3 +8,5 @@ nohop.out
 
 misc/Checking_Coversion_of_Dropout_and_BN_layers/*.npy
 misc/*.npy
+
+src/nengo_dl_test/*.out

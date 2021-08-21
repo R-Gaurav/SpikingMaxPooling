@@ -6,7 +6,7 @@ from utils.base_utils import log
 
 import tensorflow as tf
 
-def _get_2d_cnn_block(block, data_format, layer_cfg, layer_objs_lst):
+def _get_2d_cnn_block(block, data_format, padding, layer_cfg, layer_objs_lst):
   """
   Returns a conv block.
 
@@ -24,12 +24,13 @@ def _get_2d_cnn_block(block, data_format, layer_cfg, layer_objs_lst):
   # transforms on host to chip connections
   conv = tf.keras.layers.Conv2D(
     layer_cfg.num_kernels, layer_cfg.kernel_dims, strides=layer_cfg.stride_dims,
-    data_format=data_format, activation="relu", use_bias=False)(block)
+    data_format=data_format, activation="relu", padding=padding,
+    use_bias=False)(block)
   layer_objs_lst.append(conv)
 
   return conv
 
-def _get_max_pool_block(block, data_format, layer_cfg, layer_objs_lst):
+def _get_max_pool_block(block, data_format, padding, layer_cfg, layer_objs_lst):
   """
   Returns a MaxPool block.
 
@@ -41,13 +42,13 @@ def _get_max_pool_block(block, data_format, layer_cfg, layer_objs_lst):
   log.INFO("Layer name: {}".format(block.name))
   log.INFO("Layer config: {}".format(layer_cfg))
   max_pool = tf.keras.layers.MaxPool2D(
-      pool_size=layer_cfg.kernel_dims, padding="valid",
+      pool_size=layer_cfg.kernel_dims, padding=padding,
       data_format=data_format)(block)
   layer_objs_lst.append(max_pool)
 
   return max_pool
 
-def _get_avg_pool_block(block, data_format, layer_cfg, layer_objs_lst):
+def _get_avg_pool_block(block, data_format, padding, layer_cfg, layer_objs_lst):
   """
   Returns an AveragePool block.
 
@@ -59,7 +60,7 @@ def _get_avg_pool_block(block, data_format, layer_cfg, layer_objs_lst):
   log.INFO("Layer name: {}".format(block.name))
   log.INFO("Layer config: {}".format(layer_cfg))
   avg_pool = tf.keras.layers.AveragePooling2D(
-      pool_size=layer_cfg.kernel_dims, padding="valid",
+      pool_size=layer_cfg.kernel_dims, padding=padding,
       data_format=data_format)(block)
   layer_objs_lst.append(avg_pool)
 
@@ -116,17 +117,18 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
   layer_objs_lst.append(inpt_lyr)
   model = tf_cfg["tf_model"]
   data_format = "channels_first" if tf_cfg["is_channels_first"] else "channels_last"
+  padding="same" if tf_cfg["tf_model"]["name"] == "model_7" else "valid"
 
   ###################### Construct the model's arch. ########################
   # Add Conv and MaxPool blocks.
   x = inpt_lyr
   for _, layer in model["layers"].items(): # Dicts are ordered in Python3.7.
     if layer.name == "Conv":
-      x = _get_2d_cnn_block(x, data_format, layer, layer_objs_lst)
+      x = _get_2d_cnn_block(x, data_format, padding, layer, layer_objs_lst)
     elif layer.name == "MaxPool":
-      x = _get_max_pool_block(x, data_format, layer, layer_objs_lst)
+      x = _get_max_pool_block(x, data_format, padding, layer, layer_objs_lst)
     elif layer.name == "AvgPool":
-      x = _get_avg_pool_block(x, data_format, layer, layer_objs_lst)
+      x = _get_avg_pool_block(x, data_format, padding, layer, layer_objs_lst)
     elif layer.name == "Dropout":
       # Dropout probability is layer.num_kernels.
       if include_dropout:
@@ -138,8 +140,8 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
   x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
   x = _get_dense_block(x, tf_cfg["nn_dlyr"], layer_objs_lst)
-  #if include_dropout:
-  #  x = _get_dropout_block(x, 0.5, layer_objs_lst)
+  if include_dropout:
+    x = _get_dropout_block(x, 0.5, layer_objs_lst)
   # Add the final output Dense block.
   # output_lyr = _get_dense_block(x, num_clss, layer_objs_lst, actvn="softmax")
   # Presence of "softmax" activation results in formation of `TensorNode` and

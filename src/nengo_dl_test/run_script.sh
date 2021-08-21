@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=03:00:00
+#SBATCH --time=08:00:00
 #SBATCH --account=def-anarayan
 #SBATCH --nodes=1
 #SBATCH --mem=32G
