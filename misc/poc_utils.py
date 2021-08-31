@@ -9,6 +9,7 @@ import random
 from scipy.stats import poisson
 import seaborn as sbn
 import matplotlib.pyplot as plt
+from matplotlib.legend import Legend
 
 def get_groups_of_poisson_distributed_isi(mu, size, num_groups, seed=0):
   np.random.seed(seed)
@@ -52,21 +53,47 @@ def plot_barplot(xs, heights, font_size, file_name):
   plt.xlabel('ISI', fontsize=font_size)
   plt.ylabel('Mean Frequency', fontsize=font_size)
   plt.savefig(file_name, dpi=450, bbox_inches = "tight")
-
-def plot_sctrplot(x1, x2, x3, y, s1, s2, s3, font_size, lgnd_str, file_name):
+"""
+def plot_sctrplot(x1, x2, x3, x4, y, s1, s2, s3, font_size, lgnd_str, file_name):
   plt.figure(figsize=(4, 4))
   ax = sbn.scatterplot(x1, y, alpha=0.5, s=150, label="$%s=%s$" % (lgnd_str, s1))
   sbn.scatterplot(
       x2, y, alpha=0.5, s=200, label="$%s=%s$" % (lgnd_str, s2), marker="P")
   sbn.scatterplot(
       x3, y, alpha=0.5, s=450, label="$%s=%s$" % (lgnd_str, s3), marker="*")
+  sbn.scatterplot(
+      x4, y, alpha=0.5, s=450, label="Average", marker="^")
   ax.tick_params(labelsize=font_size)
   ax.set_xticks(np.round(np.arange(0, 1.4, 0.2), 1))
   ax.set_yticks(np.round(np.arange(0, 1.4, 0.2), 1))
   ax.legend(prop={"size": font_size})
   ax.set_xlabel("Estimated Max Values", fontsize=font_size)
   ax.set_ylabel("True Max Values", fontsize=font_size)
-  ax.legend(handletextpad=0.1, fontsize=font_size, loc='upper left')
+  ax.legend(handletextpad=0.1, fontsize=font_size, loc='upper left', framealpha=0.5)
+  plt.savefig(file_name, dpi=450, bbox_inches = "tight")
+"""
+def plot_sctrplot(x1, x2, x3, x4, y, s1, s2, s3, font_size, lgnd_str, file_name):
+  fig, ax = plt.subplots(figsize=(4, 4))
+  ax1 = ax.scatter(x1, y, alpha=0.5, s=150, label="$%s=%s$" % (lgnd_str, s1))
+  ax2 = ax.scatter(
+      x2, y, alpha=0.5, s=200, label="$%s=%s$" % (lgnd_str, s2), marker="P")
+  ax3 = ax.scatter(
+      x3, y, alpha=0.5, s=400, label="$%s=%s$" % (lgnd_str, s3), marker="*")
+  ax4 = ax.scatter(
+      x4, y, alpha=0.5, s=175, label="Average", marker="^")
+  plt.tick_params(labelsize=font_size)
+  plt.xticks(np.round(np.arange(0, 1.4, 0.2), 1))
+  plt.yticks(np.round(np.arange(0, 1.4, 0.2), 1))
+  plt.xlabel("Estimated Max Values", fontsize=font_size)
+  plt.ylabel("True Max Values", fontsize=font_size)
+  plt.legend([ax4, ax1], ["Average", "$%s=%s$" % (lgnd_str, s1)],
+             handletextpad=0.1, fontsize=font_size, loc='upper left',
+             framealpha=0.325)
+  leg = Legend(ax, [ax2, ax3],
+              ["$%s=%s$" % (lgnd_str, s2), "$%s=%s$" % (lgnd_str, s3)],
+              loc='lower right', handletextpad=0.1, fontsize=font_size,
+              framealpha=0.325)
+  ax.add_artist(leg);
   plt.savefig(file_name, dpi=450, bbox_inches = "tight")
 
 def configure_ensemble_for_2x2_max_join_op(loihi_sim, ens):
@@ -150,9 +177,10 @@ def get_avam_net_for_2x2_max_pooling(seed=0, max_rate=250, radius=1, sf=1,
           ))
       return ens
 
-    ens_12 = _get_ensemble() # Ensemble for max(a, b).
-    ens_34 = _get_ensemble() # Ensemble for max(c, d).
-    ens_1234 = _get_ensemble() # Ensemble for max(max(a,b), max(c, d)).
+    if do_max:
+      ens_12 = _get_ensemble() # Ensemble for max(a, b).
+      ens_34 = _get_ensemble() # Ensemble for max(c, d).
+      ens_1234 = _get_ensemble() # Ensemble for max(max(a,b), max(c, d)).
 
     # Intermediate passthrough Nodes for summing and outputing the result.
     node_12 = nengo.Node(size_in=1) # For max(a, b).
