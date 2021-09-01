@@ -4,9 +4,11 @@
 # Author: Ramashish Gaurav
 #
 
+import argparse
 import datetime
 import nengo
 import nengo_dl
+import nengo_loihi
 import numpy as np
 import random
 import tensorflow as tf
@@ -140,9 +142,22 @@ def nengo_dl_test(n_test=None):
     log.INFO("*"*100)
 
 if __name__ == "__main__":
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--is_relu", type=str, required=True,
+                      help="Should I do non-spiking ReLU based inference?")
+  args = parser.parse_args()
+  is_relu = True if args.is_relu=="True" else False
+
   log.configure_log_handler(
       "%s_sfr_%s_epochs_%s_timestamp_%s_.log" % (
       ndl_cfg["train_mode"]["ndl_train_mode_res_otpt_dir"] + "_nengo_dl_train_",
       ndl_cfg["train_mode"]["sfr"], tf_cfg["epochs"], datetime.datetime.now()))
-  #nengo_dl_train()
+  if is_relu:
+    log.INFO("Testing for non-spiking ReLU based model...")
+    ndl_cfg["test_mode"]["synapse"] = None
+    ndl_cfg["test_mode"]["sfr"] = 1
+    ndl_cfg["test_mode"]["n_steps"] = 1
+    ndl_cfg["test_mode"]["spk_neuron"] = nengo_loihi.neurons.RectifiedLinear()
+
+  nengo_dl_train()
   nengo_dl_test(n_test=None)

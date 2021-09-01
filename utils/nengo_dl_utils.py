@@ -75,20 +75,19 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
         #inference_only=True,
         max_to_avg_pool=max_to_avg_pool
     )
-
     # Explicitly set the connection synapse from Conv to MaxPooling layers.
-    for i, conn in enumerate(ndl_model.net.all_connections):
-      if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
-        if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
-            conn.post_obj.label.startswith("max_pooling")):
-          log.INFO(
-              "Connection: {}, | and prior to explicit synapsing: {}".format(
-              conn, conn.synapse))
-          ndl_model.net._connections[i].synapse = nengo.Lowpass(
-              test_cfg["synapse"])
-          log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
-              conn, conn.synapse))
-
+    if test_cfg["synapse"] is not None:
+      for i, conn in enumerate(ndl_model.net.all_connections):
+        if isinstance(conn.pre_obj, nengo.ensemble.Neurons):
+          if (isinstance(conn.post_obj, nengo_dl.tensor_node.TensorNode) and
+              conn.post_obj.label.startswith("max_pooling")):
+            log.INFO(
+                "Connection: {}, | and prior to explicit synapsing: {}".format(
+                conn, conn.synapse))
+            ndl_model.net._connections[i].synapse = nengo.Lowpass(
+                test_cfg["synapse"])
+            log.INFO("Connection: {}, | and after explicit synapsing: {}".format(
+                conn, conn.synapse))
   else:
     train_cfg = ngo_cfg["train_mode"]
     log.INFO("Train Mode: Converting the obtained TF model to Nengo-DL model..")

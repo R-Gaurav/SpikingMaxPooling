@@ -51,7 +51,7 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   log.INFO("Getting the NengoDL model for MAX joinOp based MaxPooling...")
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, nloihi_cfg, mode="test", num_clss=num_clss,
-      max_to_avg_pool=False, include_layer_probes=True)
+      max_to_avg_pool=False, include_layer_probes=False)
   log.INFO("Getting the dataset: %s" % nloihi_cfg["dataset"])
   _, _, test_x, test_y = get_exp_dataset(
       nloihi_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],

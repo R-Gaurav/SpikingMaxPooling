@@ -126,7 +126,7 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
     if layer.name == "Conv":
       x = _get_2d_cnn_block(x, data_format, padding, layer, layer_objs_lst)
     elif layer.name == "MaxPool":
-      x = _get_max_pool_block(x, data_format, padding, layer, layer_objs_lst)
+      x = _get_max_pool_block(x, data_format, "valid", layer, layer_objs_lst)
     elif layer.name == "AvgPool":
       x = _get_avg_pool_block(x, data_format, padding, layer, layer_objs_lst)
     elif layer.name == "Dropout":
