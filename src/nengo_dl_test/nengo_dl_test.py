@@ -45,7 +45,7 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=max_to_avg_pool, load_tf_trained_wts=ndl_cfg["load_tf_wts"],
-      include_layer_probes=True)
+      include_layer_probes=False)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
       ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
@@ -68,8 +68,8 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
         n_test_imgs += 1
-      if n_test_imgs == 100: # For quick check, comment if run for entire data.
-        break
+      #if n_test_imgs == 100: # For quick check, comment if run for entire data.
+      #  break
 
     log.INFO("Testing done! Writing max_to_avg_pool: %s test accuracy results "
              "in log..." % max_to_avg_pool)
@@ -218,6 +218,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   for conn in ndl_model.net._connections:
     log.INFO("Connection: {} | Synapse: {}".format(conn, conn.synapse))
 
+  ndl_sim_preds = []
   log.INFO("Start testing...")
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
@@ -229,6 +230,7 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
     for batch in test_batches:
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
       for true_lbl, pred_lbl in zip(batch[1], sim_data[ngo_probes_lst[-1]]):
+        ndl_sim_preds.append(pred_lbl)
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
         n_test_imgs += 1
@@ -237,6 +239,12 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
     log.INFO("Testing done! Writing associative-max max pooling - do_max: %s "
              "test accuracy results in log..." % do_max)
     log.INFO("Nengo DL Test Accuracy: %s" % (acc/n_test_imgs))
+    log.INFO("Saving the AVAM method predictions...")
+    np.save((ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+
+             "avam_do_max_%s_radius_%s.npy" % (
+             "true" if do_max==True else "false",
+             "_".join(str(ndl_cfg["test_mode"]["radius"]).split(".")))),
+             np.array(ndl_sim_preds))
     # TODO: Delete the `ndl_model` to reclaim GPU memory.
     log.INFO("*"*100)
 
@@ -390,8 +398,8 @@ def nengo_dl_test():
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   """
-  #log.INFO("Testing in AVAM Mode with do_max=True")
-  #_do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
+  log.INFO("Testing in AVAM Mode with do_max=True")
+  _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
   """
   log.INFO("Testing in custom associative avg mode...")
