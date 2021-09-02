@@ -223,8 +223,6 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
   with nengo_dl.Simulator(
       ndl_model.net, minibatch_size=ndl_cfg["test_mode"]["test_batch_size"],
       progress_bar=False) as sim:
-    #if not ndl_cfg["load_tf_wts"]:
-    #  sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
     log.INFO("Nengo-DL model with associative-max max pooling layer compiled.")
     acc, n_test_imgs = 0, 0
     for batch in test_batches:
