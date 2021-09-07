@@ -70,7 +70,7 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
     return train_x, train_y, test_x, test_y
 
 def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True,
-                               is_nengo_dl_train_test=False):
+                               is_nengo_dl_train_test=False, use_bias=False):
   """
   Returns the batches of training or test data.
 
@@ -171,5 +171,18 @@ def get_batches_of_exp_dataset(ndl_cfg, is_test=True, channels_first=True,
       #for i, probe in enumerate(ndl_mdl_probes[1:-1]):
       #  output_dict["probe_%s" % (i+1)] = np.ones(
       #      (batch_size, 1, probe.size_in), dtype=np.int32)
+
+      if use_bias:
+        input_dict["conv2d.0.bias"] = np.ones((batch_size, 4, 1), dtype=np.int32)
+        input_dict["conv2d_1.0.bias"] = np.ones((batch_size, 32, 1), dtype=np.int32)
+        input_dict["conv2d_2.0.bias"] = np.ones((batch_size, 32, 1), dtype=np.int32)
+        input_dict["conv2d_3.0.bias"] = np.ones((batch_size, 64, 1), dtype=np.int32)
+        input_dict["conv2d_4.0.bias"] = np.ones((batch_size, 64, 1), dtype=np.int32)
+        input_dict["conv2d_5.0.bias"] = np.ones((batch_size, 128, 1), dtype=np.int32)
+        input_dict["conv2d_6.0.bias"] = np.ones((batch_size, 128, 1), dtype=np.int32)
+        input_dict["conv2d_7.0.bias"] = np.ones((batch_size, 128, 1), dtype=np.int32)
+        input_dict["conv2d_8.0.bias"] = np.ones((batch_size, 128, 1), dtype=np.int32)
+        input_dict["conv2d_9.0.bias"] = np.ones((batch_size, 128, 1), dtype=np.int32)
+        input_dict["conv2d_10.0.bias"] = np.ones((batch_size, 128, 1), dtype=np.int32)
 
       yield (input_dict, output_dict)

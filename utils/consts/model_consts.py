@@ -231,13 +231,13 @@ MODEL_7 = { # TF CIFAR10: Without Data Augmentation: 71% ACC. (32 EPOCHS)
     "layer_17": Layer(name="Dropout", num_kernels=0.4),
 
 
-    #"layer_18": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
-    #                 stride_dims=(1, 1)),
-    #"layer_19": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
-    #                 stride_dims=(1, 1)),
-    #"layer_20": Layer(name="MaxPool", kernel_dims=(2, 2)),
-    ## num_kernels is Dropout Probability.
-    #"layer_21": Layer(name="Dropout", num_kernels=0.4),
+    "layer_18": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
+                     stride_dims=(1, 1)),
+    "layer_19": Layer(name="Conv", num_kernels=128, kernel_dims=(3, 3),
+                     stride_dims=(1, 1)),
+    "layer_20": Layer(name="MaxPool", kernel_dims=(2, 2)),
+    # num_kernels is Dropout Probability.
+    "layer_21": Layer(name="Dropout", num_kernels=0.4),
   }
 }
 

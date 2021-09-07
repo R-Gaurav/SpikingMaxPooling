@@ -84,8 +84,8 @@ def plot_sctrplot(x1, x2, x3, x4, y, s1, s2, s3, font_size, lgnd_str, file_name)
   plt.tick_params(labelsize=font_size)
   plt.xticks(np.round(np.arange(0, 1.4, 0.2), 1))
   plt.yticks(np.round(np.arange(0, 1.4, 0.2), 1))
-  plt.xlabel("Estimated Max Values", fontsize=font_size)
-  plt.ylabel("True Max Values", fontsize=font_size)
+  plt.xlabel("Estimated Max $U$", fontsize=font_size)
+  plt.ylabel("True Max $U$", fontsize=font_size)
   plt.legend([ax4, ax1], ["Average", "$%s=%s$" % (lgnd_str, s1)],
              handletextpad=0.1, fontsize=font_size, loc='upper left',
              framealpha=0.325)

@@ -40,6 +40,7 @@ def nengo_dl_train():
   train_x, train_y, _, _ = get_exp_dataset(
       tf_cfg["dataset"], is_nengo_dl_train_test=True)
   num_imgs = train_x.shape[0]
+  use_bias = True if tf_cfg["tf_model"]["name"] == "model_7" else False
 
   if tf_cfg["dataset"] == MNIST or tf_cfg["dataset"] == FMNIST:
     inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
@@ -78,7 +79,7 @@ def nengo_dl_train():
       log.INFO("Executing Epoch: %s ..." % epoch)
       batches = get_batches_of_exp_dataset(
             ndl_cfg, is_test=False, channels_first=tf_cfg["is_channels_first"],
-            is_nengo_dl_train_test=True)
+            is_nengo_dl_train_test=True, use_bias=use_bias)
       ndl_sim.fit(batches, epochs=1, steps_per_epoch=num_imgs // train_bs)
 
     log.INFO("Saving the trained model-parameters...")
