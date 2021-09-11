@@ -119,7 +119,7 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
   model = tf_cfg["tf_model"]
   data_format = "channels_first" if tf_cfg["is_channels_first"] else "channels_last"
   padding="same" if tf_cfg["tf_model"]["name"] == "model_7" else "valid"
-  use_bias=True if tf_cfg["tf_model"]["name"] == "model_7" else False
+  #use_bias=True if tf_cfg["tf_model"]["name"] == "model_7" else False
 
   ###################### Construct the model's arch. ########################
   # Add Conv and MaxPool blocks.
@@ -127,7 +127,7 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
   for _, layer in model["layers"].items(): # Dicts are ordered in Python3.7.
     if layer.name == "Conv":
       x = _get_2d_cnn_block(
-          x, data_format, padding, layer, layer_objs_lst, use_bias=use_bias)
+          x, data_format, padding, layer, layer_objs_lst) #, use_bias=use_bias)
     elif layer.name == "MaxPool":
       x = _get_max_pool_block(x, data_format, "valid", layer, layer_objs_lst)
     elif layer.name == "AvgPool":

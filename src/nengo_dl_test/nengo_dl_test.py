@@ -45,7 +45,7 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
   ndl_model, ngo_probes_lst = get_nengo_dl_model(
       inpt_shape, tf_cfg, ndl_cfg, mode="test", num_clss=num_clss,
       max_to_avg_pool=max_to_avg_pool, load_tf_trained_wts=ndl_cfg["load_tf_wts"],
-      include_layer_probes=False)
+      include_layer_probes=True)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
       ndl_cfg, is_test=True, channels_first=tf_cfg["is_channels_first"],
@@ -60,6 +60,7 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
     acc, n_test_imgs = 0, 0
     layer_probes_otpt = defaultdict(list)
     for batch in test_batches:
+      log.INFO("RG: N Test Images Done: %s" % n_test_imgs)
       sim_data = sim.predict_on_batch({ngo_probes_lst[0]: batch[0]})
       # Collect the intermediate layers spike/synapsed output.
       for probe in ngo_probes_lst[1:-1]:
@@ -68,8 +69,8 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
         n_test_imgs += 1
-      #if n_test_imgs == 100: # For quick check, comment if run for entire data.
-      #  break
+      if n_test_imgs == 100: # For quick check, comment if run for entire data.
+        break
 
     log.INFO("Testing done! Writing max_to_avg_pool: %s test accuracy results "
              "in log..." % max_to_avg_pool)
@@ -396,8 +397,8 @@ def nengo_dl_test():
   _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=True)
 
   """
-  log.INFO("Testing in AVAM Mode with do_max=True")
-  _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
+  #log.INFO("Testing in AVAM Mode with do_max=True")
+  #_do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True)
 
   """
   log.INFO("Testing in custom associative avg mode...")

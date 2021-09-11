@@ -117,10 +117,17 @@ def get_nengo_dl_model(inpt_shape, tf_cfg, ngo_cfg, mode="test", num_clss=10,
       prev_lyr_obj = None
       for lyr_obj in layer_objs_lst[1:-1]:
         #if not lyr_obj.name.startswith("max_pooling"):
+        #print(lyr_obj.get_shape())
+        #print(lyr_obj.shape)
         log.INFO("RG: Layer OBJ: {}, name: {}".format(lyr_obj, lyr_obj.name))
         if lyr_obj.name.startswith("conv2d_1") or lyr_obj.name.startswith("conv2d_2"):
+          conv_shape = tuple(lyr_obj.shape[1:])
+          total_neurons = np.prod(conv_shape)
+          random_neurons = np.random.choice(total_neurons, 2048, replace=False)
+          log.INFO("Random Neuron Indices: {}".format(random_neurons))
         #if prev_lyr_obj is not None and prev_lyr_obj.name.startswith("max_pooling"):
-          nengo_probes_obj_lst.append(nengo.Probe(ndl_model.layers[lyr_obj][:2048]))
+          nengo_probes_obj_lst.append(
+              nengo.Probe(ndl_model.layers[lyr_obj][random_neurons]))
                                         #attr="input"))
         prev_lyr_obj = lyr_obj
     if include_mp_layer_probes: # Only MaxPooling layers.

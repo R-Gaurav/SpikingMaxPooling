@@ -22,9 +22,9 @@ from .block_configs import block_shapes
 # training. And during test, the same `sfr` with different `n_steps` could be
 # used. Again, the `synapse` and `spk_neuron` is (mostly) kept unchanged.
 
-model = MODEL_7
-dataset = CIFAR10 # One of MNIST, CIFAR10, FMNIST
-is_channels_first = False # False for Model 7 (CIFAR10), and FMNIST ( all models)
+model = MODEL_2
+dataset = MNIST # One of MNIST, CIFAR10, FMNIST
+is_channels_first = True # False for Model 7 (CIFAR10), and FMNIST ( all models)
 sfr = 400 # Only for NengoDL. For NengoLoihi, it is set separately.
 
 # FMNIST: False, MODEL_1 -> 24 | False, MODEL_2 -> 64
@@ -48,7 +48,7 @@ nengo_loihi_cfg = {
       EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   "test_mode": {
     "n_steps": 60, # in milliseconds. (40, 50 for MNIST) (50, 60 for CIFAR10)
-    "n_test": 100, # Number of images to be tested.
+    "n_test": 100, # Number of images to be tested in each batch.
     "scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
     #"scale": 1.5, # Scaling parameter of the output of root neurons. (MODEL_2)
     ################# WITH MODEL_1 and MNIST ###########################
@@ -85,7 +85,7 @@ nengo_dl_cfg = {
     "radius": 0.20,
     "synapse": 0.005,
     "sfr": sfr,
-    "n_steps": 120, # 60, # 120 required for a deeper MODEL_7
+    "n_steps": 60, # 60, # 120 required for a deeper MODEL_7
     "test_batch_size": 10, # 10 for 120
     "test_mode_res_otpt_dir": (
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/ndl_test_only_results/"
