@@ -51,15 +51,6 @@ nengo_loihi_cfg = {
     "n_test": 100, # Number of images to be tested in each batch.
     "scale": 2, # Scaling parameter of the output of root neurons. (MODEL_1)
     #"scale": 1.5, # Scaling parameter of the output of root neurons. (MODEL_2)
-    ################# WITH MODEL_1 and MNIST ###########################
-    # scale=1.2 => 97.2
-    # scale=1.1 => 96.8 on first 250 images. 97.2
-    # scale=1.0 => 97.2 on first 250 images. 97.6
-    # scale=0.9 => 98.0 on first 250 images. 97.6
-    # scale=0.8 => 97.2 on first 250 images.
-    # scale=0.85 => 97.2 on first 250 images.
-    # scale=0.95 => 97.2 on first 250 images.
-    ################## WITH MODEL_2 and MNIST ###########################
 
     "sfr": 400,
     "synapse": 0.005,
@@ -104,13 +95,6 @@ nengo_dl_cfg = {
         EXP_OTPT_DIR + "/%s/%s/ndl_train_test_results/" % (dataset, model["name"])),
   }
 }
-
-#asctv_max_cfg = {
-#    "conv2d.0": {"max_rate": 250, "radius": 3, "sf": 1.2, "synapse": 0.001},
-#    "conv2d_1.0": {"max_rate": 250, "radius": 2, "sf": 1.2, "synapse": 0.001},
-#    "conv2d_2.0": {"max_rate": 250, "radius": 1.5, "sf": 1.2, "synapse": 0.001},
-#    "conv2d_3.0": {"max_rate": 250, "radius": 1, "sf": 1.2, "synapse": 0.001},
-#}
 
 pathlib.Path(tf_exp_cfg["tf_wts_otpt_dir"]).mkdir(parents=True, exist_ok=True)
 pathlib.Path(tf_exp_cfg["tf_res_otpt_dir"]).mkdir(parents=True, exist_ok=True)
