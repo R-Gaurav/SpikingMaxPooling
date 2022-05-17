@@ -75,12 +75,8 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
         test_x, presentation_time=pres_time)
 
     nengo_loihi.add_params(ndl_model.net) # Allow on_chip to be set for Ensembles.
-    # TODO: Check if on_chip is set True for the new MAX joinOp Ensemble?
     # In the TF model, the first Conv layer (immediately after the Input layer)
     # is responsible to converting images to spikes, therefore set it to run Off-Chip.
-    #print("RG: NDL MOdel layers: ", ndl_model.model.layers[1])
-    #print("RG: ", [key for key in ndl_model.layers.keys()])
-    #print("RG: NDL Model net config keys: ", ndl_model.net.config)
     ndl_model.net.config[
         ndl_model.layers[ndl_model.model.layers[1]].ensemble].on_chip = False
 
@@ -165,18 +161,6 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
           (rows*cols, ), (num_chnls*rows*cols, ))
           #(1, rows, cols), (num_chnls, rows, cols))
 
-      ##########################################################################
-      #if tf_cfg["is_channels_first"]:
-      #  ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-      #      #(1, rows, cols), (num_chnls, rows, cols))
-      #      (rows*cols, ), (num_chnls*rows*cols, ))
-      #else:
-      #  ndl_model.net.config[max_join_op_ens].block_shape = nengo_loihi.BlockShape(
-      #      (rows*cols, ), (num_chnls*rows*cols, ))
-          #(1, rows, cols), (num_chnls, rows, cols)) # Results in 100% acc in 40 n_steps in MODEL_2.
-          #(16, 8, 8), (num_chnls, rows, cols)) # Results is 95% acc in 40 and 50 n_steps in MODEL_2.
-      ##########################################################################
-
       if tf_cfg["is_channels_first"]:
         output_idcs = [i for i in range(num_neurons) if i%4==3]
       else:
@@ -191,8 +175,6 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
           conn_from_pconv_to_max.pre_obj[grouped_slices[:num_neurons]],
           max_join_op_ens.neurons,
           transform=None, #conn_from_pconv_to_max.transform, # NoTransform.
-          # TODO: Remove the following.
-          #synapse=conn_from_pconv_to_max.synapse, # Here synapse is 0.005.
           synapse=None, # Feed Spikes to JoinOp Ens instead of filtered signal.
           function=conn_from_pconv_to_max.function # None.
       )
@@ -248,23 +230,6 @@ def _do_nengo_loihi_MAX_joinOP_MaxPooling(inpt_shape, num_clss,
   ############## BUILD THE NENGOLOIHI MODEL AND EXECUTE ON LOIHI ###############
   log.INFO("Start testing...")
   with nengo_loihi.Simulator(ndl_model.net, seed=SEED, target="loihi") as loihi_sim:
-      #precompute=False, hardware_options={ "snip_max_spikes_per_step": 12000}) as loihi_sim:
-
-  ########################z TODO: REMOVE LATER ###########################
-  #  for ens in ndl_model.net.all_ensembles:
-  #    print("$"*80)
-  #    print("RG: ", ens)
-  #    #ens = ndl_model.layers[ndl_model.model.layers[1]].ensemble
-  #    blocks = loihi_sim.model.objs[ens]
-  #    log.INFO("Number of (in and out) Blocks for Ensemble %s are: %s and %s."
-  #             % (ens, len(blocks["in"]), len(blocks["out"])))
-  #    for block in blocks["in"]:
-  #      in_chip_idx, in_core_idx, in_block_idx, in_compartment_idxs, _ = (
-  #          board.find_block(block))
-  #      print("Ens: %s, block: %s, chip_idx: %s, core_idx: %s"
-  #            % (ens, block, in_chip_idx, in_core_idx))
-  #    print("$"*80)
-  ##############################################################################
     for max_join_op_ens in max_join_op_ens_list:
       log.INFO("Configuring the MAX JoinOP Ensemble: %s" % max_join_op_ens)
       configure_ensemble_for_2x2_max_join_op(loihi_sim, max_join_op_ens)

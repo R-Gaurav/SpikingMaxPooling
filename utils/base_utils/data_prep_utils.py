@@ -42,10 +42,6 @@ def get_exp_dataset(dataset, channels_first=True, start_idx=None, end_idx=None,
     train_x, test_x = np.expand_dims(train_x, -1), np.expand_dims(test_x, -1)
     train_y, test_y = np.expand_dims(train_y, -1), np.expand_dims(test_y, -1)
 
-  # TODO: Probably standardize the images?
-  # Normalize the images in range [-1, 1]
-  # Normalizing the dataset doesn't work well when TF training and NDL test is done.
-  # But normalizing it for NengoDL Train-Test works superior than not normalizing.
   if is_nengo_dl_train_test:
     log.INFO("Normalizing the dataset...")
     train_x = train_x.astype(np.float32) / 127.5 - 1

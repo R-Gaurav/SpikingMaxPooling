@@ -54,8 +54,6 @@ def nengo_dl_train():
       inpt_shape, tf_cfg, ndl_cfg, mode="train", num_clss=num_clss)
   ndl_train_cfg = ndl_cfg["train_mode"]
   train_bs = ndl_train_cfg["train_batch_size"]
-  # TODO: Is there a need to set the following? May be when training neuron is Spiking Neuron?
-  # with tf.keras.backend.learning_phase_scope(1), nengo_dl.Simulator(
   log.INFO("Creating the NengoDL Simulator...")
   with nengo_dl.Simulator(ndl_model.net, minibatch_size=train_bs, seed=SEED,
                           progress_bar=False) as ndl_sim:

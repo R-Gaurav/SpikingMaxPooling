@@ -137,9 +137,6 @@ def get_2d_cnn_model(inpt_shape, tf_cfg, num_clss=10, include_dropout=True):
       if include_dropout:
         x = _get_dropout_block(x, layer.num_kernels, layer_objs_lst)
   # Flatten
-  # FIXME: Probable bug in Nengo-DL where data_format = "channels_last" in
-  # Flatten layer results in garbage predictions.
-  #x = tf.keras.layers.Flatten(data_format=layer.data_format)(x)
   x = tf.keras.layers.Flatten()(x)
   # Add one Dense block.
   x = _get_dense_block(x, tf_cfg["nn_dlyr"], layer_objs_lst)

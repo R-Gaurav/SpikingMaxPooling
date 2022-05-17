@@ -79,7 +79,6 @@ def _do_nengo_dl_max_or_max_to_avg(inpt_shape, num_clss, max_to_avg_pool=False):
       log.INFO("Saving intermediate probes output...")
       np.save(ndl_cfg["test_mode"]["test_mode_res_otpt_dir"]+
               "/layer_probes_otpt.npy", layer_probes_otpt)
-    #TODO: Delete the `ndl_model` to reclaim GPU memory.
     log.INFO("*"*100)
 
 def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
@@ -233,7 +232,6 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
         if np.argmax(true_lbl) == np.argmax(pred_lbl[-1]):
           acc += 1
         n_test_imgs += 1
-        # TODO: Collect the intermediate layers spike/synapsed output.
 
     log.INFO("Testing done! Writing associative-max max pooling - do_max: %s "
              "test accuracy results in log..." % do_max)
@@ -244,7 +242,6 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
              "true" if do_max==True else "false",
              "_".join(str(ndl_cfg["test_mode"]["radius"]).split(".")))),
              np.array(ndl_sim_preds))
-    # TODO: Delete the `ndl_model` to reclaim GPU memory.
     log.INFO("*"*100)
 
 def _do_isi_based_max_pooling(inpt_shape, num_clss):
@@ -363,7 +360,6 @@ def _do_isi_based_max_pooling(inpt_shape, num_clss):
   log.INFO("Testing done! Writing the ISI based MaxPooling test accuracy results "
            "in log...")
   log.INFO("Nengo DL Test Accuracy: %s" % (acc/n_test_imgs))
-  # TODO: Delete the `ndl_model` to reclaim GPU memory.
   log.INFO("*"*100)
 
 def nengo_dl_test():
