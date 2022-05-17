@@ -14,11 +14,10 @@ import random
 
 import _init_paths
 
-#from nengo_dl.graph_optimizer import noop_planner
 from collections import defaultdict
 
 from configs.exp_configs import (
-    nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg) #, asctv_max_cfg as am_cfg)
+    nengo_dl_cfg as ndl_cfg, tf_exp_cfg as tf_cfg)
 from utils.base_utils import log
 from utils.base_utils.data_prep_utils import get_batches_of_exp_dataset
 from utils.base_utils.exp_utils import (get_grouped_slices_2d_pooling_cf,
@@ -98,7 +97,6 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
       max_to_avg_pool=False, load_tf_trained_wts=ndl_cfg["load_tf_wts"])
   with nengo_dl.Simulator(ndl_model.net, seed=SEED) as ndl_sim:
     ndl_sim.load_params(ndl_cfg["trained_model_params"]+ "/ndl_trained_params")
-                        #"/attempting_TN_MP_loihineurons_8_16")
     ndl_sim.freeze_params(ndl_model.net)
   log.INFO("Getting the dataset: %s" % ndl_cfg["dataset"])
   test_batches = get_batches_of_exp_dataset(
@@ -171,12 +169,10 @@ def _do_custom_associative_max_or_avg(inpt_shape, num_clss, do_max=True):
       # Create the MaxPool layer of multiple smaller 2x2 sub-network.
       max_pool_layer = get_max_pool_global_net(
           (num_chnls, rows, cols), seed=SEED,
-          max_rate=250, #am_cfg[conv_label]["max_rate"],
-          #radius=3, #am_cfg[conv_label]["radius"],
-          radius=ndl_cfg["test_mode"]["radius"], #am_cfg[conv_label]["radius"],
-          #sf=1.2, #am_cfg[conv_label]["sf"],
-          sf=1, #am_cfg[conv_label]["sf"],
-          synapse=0.001, #am_cfg[conv_label]["synapse"],
+          max_rate=250,
+          radius=ndl_cfg["test_mode"]["radius"],
+          sf=1,
+          synapse=0.001,
           do_max=do_max
           )
       log.INFO("Associative-Max MaxPool layer obtained.")
@@ -370,7 +366,6 @@ def nengo_dl_test():
   """
   log.INFO("TF CONFIG: %s" % tf_cfg)
   log.INFO("NENGO DL CONFIG: %s" % ndl_cfg)
-  #log.INFO("ASSOCIATIVE MAX CONFIG: %s" % am_cfg)
   assert ndl_cfg["dataset"] == tf_cfg["dataset"]
 
   ##############################################################################
