@@ -33,11 +33,6 @@ def tf_train_test():
       tf_cfg["dataset"], channels_first=tf_cfg["is_channels_first"],
       is_nengo_dl_train_test=True)
   log.INFO("Augmenting the dataset: %s" % tf_cfg["dataset"])
-  #train_idg = tf.keras.preprocessing.image.ImageDataGenerator(
-  #    width_shift_range=0.1, height_shift_range=0.1, rotation_range=20,
-  #    horizontal_flip=True, data_format="channels_first" if tf_cfg[
-  #    "is_channels_first"] else "channels_last")
-  #train_idg.fit(train_x, seed=SEED)
 
   if tf_cfg["dataset"] == MNIST or tf_cfg["dataset"] == FMNIST:
     inpt_shape = (1, 28, 28) if tf_cfg["is_channels_first"] else (28, 28, 1)
@@ -57,9 +52,6 @@ def tf_train_test():
       optimizer=tf.optimizers.Adam(tf_cfg["lr"], decay=1e-4),
       loss=tf.losses.CategoricalCrossentropy(from_logits=True),
       metrics=[tf.metrics.categorical_accuracy])
-  #tf_model.fit(train_idg.flow(
-  #             train_x, train_y, seed=SEED, batch_size=tf_cfg["batch_size"]),
-  #             batch_size=tf_cfg["batch_size"], epochs=tf_cfg["epochs"])
   tf_model.fit(train_x, train_y,
                batch_size=tf_cfg["batch_size"], epochs=tf_cfg["epochs"])
   log.INFO("Training done. Saving the model weights...")
