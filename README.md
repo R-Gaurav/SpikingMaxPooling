@@ -1,5 +1,5 @@
 # Spiking Approximations of the MaxPooling Operation in Deep SNNs
-Accepted in IJCNN-2022, Padua, Italy
+Accepted in IJCNN 2022, Padua, Italy
 
 * [Link](https://arxiv.org/abs/2205.07076) to the pre-print paper on Arxiv with
 Technical Appendix / Supplementary Material
