@@ -13,5 +13,5 @@ MaxPooling in SNNs - called **AVAM** and **MJOP** Spiking-MaxPooling, both of
 which are entirely deployable on Loihi neuromorphic hardware.
 
 ## Misc
-A tutorial on the introduction to MJOP and AVAM methods and how to use it in
-your SNNs can be found here. Also, feel free to use the code in this repository.
+A tutorial on the introduction to **MJOP** and **AVAM** methods can be found
+here. Feel free to use the code in this repository.
