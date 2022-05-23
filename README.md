@@ -14,4 +14,4 @@ which are entirely deployable on Loihi neuromorphic hardware.
 
 ## Misc
 A tutorial on the introduction to **MJOP** and **AVAM** methods can be found
-here. Feel free to use the code in this repository.
+[here](https://r-gaurav.github.io/2022/05/22/Spiking-Max-Pooling-in-Convolutional-Spiking-Neural-Networks.html). Feel free to use the code in this repository.
