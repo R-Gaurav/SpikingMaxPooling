@@ -3,7 +3,7 @@ Accepted in IJCNN 2022, Padua, Italy
 
 * [Link](https://arxiv.org/abs/2205.07076) to the pre-print paper on Arxiv with
 Technical Appendix / Supplementary Material
-* Link to the camera-ready paper on IEEE Xplore
+* [Link](https://ieeexplore.ieee.org/document/9892504) to the camera-ready paper on IEEE Xplore
 
 ### Short Abstract:
 
